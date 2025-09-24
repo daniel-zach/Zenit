@@ -1,6 +1,6 @@
-# 🚀 Zenit - Domine Seus Hábitos, Alcance Seus Objetivos
+# ⛰️ Zenit - Domine Seus Hábitos, Alcance Seus Objetivos
 
-### ✨ Sobre o Projeto
+### 🚀 Sobre o Projeto
 
 **Zenit** é o seu programa pessoal de **gamificação da rotina**, projetado para transformar a jornada de construção de hábitos e alcance de metas em uma experiência recompensadora. O nome "Zenit" remete ao ponto mais alto, simbolizando a sua **ascensão** e o **ápice** dos seus objetivos.
 
