@@ -51,4 +51,4 @@ O projeto será desenvolvido em fases (VAs).
 
 **Sob orientação de:** [Cleyton Magalhaes](https://github.com/cvanut)
 
-**Licença:** Este projeto está sob a licença [MIT]().
+**Licença:** Este projeto está sob a licença [MIT](LICENSE).
