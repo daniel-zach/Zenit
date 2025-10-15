@@ -1,11 +1,5 @@
 from util import limpar_terminal
-listametas = {} #achei irônico usar um dicionário e chamar de lista xD
-
-#transformar em uma classe!
-
-# falta muita coisa aqui ainda mas essa é a base
-# escolha o nome, a descrição da meta (talvez depois a dificuldade e o tempo? vamos ver)
-# e estará adicionada a lista
+listametas = {}
 
 def criarmetas():
     limpar_terminal()
