@@ -9,14 +9,13 @@ def menu():
         print("[2] Streak")
         print("[3] Monitoramento de Progresso")
         print("[0] Sair do Programa")
-        opcao = input("Escolha uma opção: ")
+        opcao = input("Escolha uma opção: ").strip()
         limpar_terminal()
 
         if opcao == "1":
             menumetas()
         elif opcao == "2":
-            # TODO: fazer os outros menus
-            return
+            print(f"{cores.AMARELO}Opção de streak em desenvolvimento{cores.NORMAL}")
         elif opcao == "3":
             return
         elif opcao == "0":
@@ -34,7 +33,7 @@ def menumetas():
             # e poder marcar a meta como completo para o dia
             print("[" + str(listametas[x]['index']) + "] " + str(listametas[x]['nome']))
         print("[0] Voltar para o Menu Principal")
-        opcao = input("Escolha uma opção: ")
+        opcao = input("Escolha uma opção: ").strip().lower()
         limpar_terminal()
 
         if opcao.casefold() == "c":
