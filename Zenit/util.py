@@ -1,4 +1,5 @@
 import os
+
 class cores:
     # utilização das cores, sempre voltar ao normal depois de usar uma cor
     # se não, tudo vai ficar na cor que você escolheu
