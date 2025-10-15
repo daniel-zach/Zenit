@@ -37,8 +37,46 @@ def menumetas():
         opcao = input("Escolha uma opção: ")
         limpar_terminal()
 
-        if opcao == "c":
+        if opcao.casefold() == "c":
             criarmetas()
+        elif opcao == "0":
+            return
+        else:
+            if opcao in listametas:
+                menuvizualizarmeta(opcao)
+            else:
+                print(cores.VERMELHO + "Opção não reconhecida!" + cores.NORMAL)
+
+def menuvizualizarmeta(index):
+    opcao = ''
+    while opcao != "0":
+        print("Nome da meta: " + listametas[index]["nome"])
+        print("Descrição da meta: " + listametas[index]["descrição"] + "\n")
+        print("[1] Marcar como completa")
+        print("[2] Editar meta")
+        print("[3] Excluir meta")
+        print("[0] Voltar ao menu metas")
+        opcao = input("Escolha uma opção: ")
+        limpar_terminal()
+
+        if opcao == "1":
+            # TODO: funcionalidade de marcar como completa
+            return
+        elif opcao == "2":
+            opcao = input("Editar nome ou descrição? ")
+            if opcao.casefold() == "nome":
+                x = input("Define o nome da meta: ")
+                listametas[index]["nome"] = x
+            elif opcao.casefold() == "descrição":
+                x = input("Define a descrição da meta: ")
+                listametas[index]["descrição"] = x
+            else:
+                print(cores.VERMELHO + "Opção não reconhecida!" + cores.NORMAL)
+            limpar_terminal()
+            
+        elif opcao == "3":
+            listametas.pop(index)
+            return
         elif opcao == "0":
             return
         else:

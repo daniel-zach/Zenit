@@ -18,4 +18,3 @@ def criarmetas():
     }
     listametas.update({str(index) : novameta})
     limpar_terminal()
-    print(listametas) # só por questões de teste
