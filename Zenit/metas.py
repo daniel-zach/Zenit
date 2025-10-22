@@ -1,4 +1,4 @@
-from util import cores, limpar_terminal
+from util import cores, limpar_terminal, enter_continuar
 from gerenciador_dados import GerenciadorDados
 
 class MenuMetas:
@@ -45,7 +45,7 @@ class MenuMetas:
                     self.menu_visualizar_meta(opcao)
                 else:
                     print(cores.VERMELHO + "Opção não reconhecida!" + cores.NORMAL)
-                    input("\nPressione Enter para continuar...")
+                    enter_continuar()
     
     def criar_meta(self):
         """Cria uma nova meta"""
@@ -71,7 +71,7 @@ class MenuMetas:
             print(cores.VERDE + msg + cores.NORMAL)
         else:
             print(cores.VERMELHO + msg + cores.NORMAL)
-        input("\nPressione Enter para continuar...")
+        enter_continuar()
     
     def menu_visualizar_meta(self, meta_id):
         """Menu de visualização e edição de uma meta específica"""
@@ -83,7 +83,7 @@ class MenuMetas:
             meta = self.gd.obter_meta(self.username, meta_id)
             if not meta:
                 print(cores.VERMELHO + "Meta não encontrada!" + cores.NORMAL)
-                input("\nPressione Enter para continuar...")
+                enter_continuar()
                 return
             
             # Exibe informações da meta
@@ -127,7 +127,7 @@ class MenuMetas:
                 return
             else:
                 print(cores.VERMELHO + "Opção não reconhecida!" + cores.NORMAL)
-                input("\nPressione Enter para continuar...")
+                enter_continuar()
     
     def editar_meta(self, meta_id):
         """Edita uma meta existente"""
@@ -153,7 +153,7 @@ class MenuMetas:
             novo_nome = input("\nNovo nome da meta: ").strip()
             if not novo_nome:
                 print(cores.AMARELO + "Nome não pode ser vazio!" + cores.NORMAL)
-                input("\nPressione Enter para continuar...")
+                enter_continuar()
                 return
         
         if opcao in ["2", "3"]:
@@ -175,7 +175,7 @@ class MenuMetas:
             limpar_terminal()
             print(cores.AMARELO + "Operação cancelada." + cores.NORMAL)
         
-        input("\nPressione Enter para continuar...")
+        enter_continuar()
     
     def excluir_meta(self, meta_id):
         """Exclui uma meta e todas suas missões"""
@@ -197,12 +197,12 @@ class MenuMetas:
                 print(cores.VERDE + msg + cores.NORMAL)
             else:
                 print(cores.VERMELHO + msg + cores.NORMAL)
-            input("\nPressione Enter para continuar...")
+            enter_continuar()
             return True
         else:
             limpar_terminal()
             print(cores.AMARELO + "Operação cancelada." + cores.NORMAL)
-            input("\nPressione Enter para continuar...")
+            enter_continuar()
             return False
     
     def menu_missoes(self, meta_id):
@@ -215,7 +215,7 @@ class MenuMetas:
             meta = self.gd.obter_meta(self.username, meta_id)
             if not meta:
                 print(cores.VERMELHO + "Meta não encontrada!" + cores.NORMAL)
-                input("\nPressione Enter para continuar...")
+                enter_continuar()
                 return
             
             print(cores.VERDE + f"Missões de {meta['nome']}\n" + cores.NORMAL)
@@ -246,7 +246,7 @@ class MenuMetas:
                     self.menu_visualizar_missao(meta_id, opcao)
                 else:
                     print(cores.VERMELHO + "Opção não reconhecida!" + cores.NORMAL)
-                    input("\nPressione Enter para continuar...")
+                    enter_continuar()
     
     def criar_missao(self, meta_id):
         """Cria uma nova missão"""
@@ -272,7 +272,7 @@ class MenuMetas:
             print(cores.VERDE + msg + cores.NORMAL)
         else:
             print(cores.VERMELHO + msg + cores.NORMAL)
-        input("\nPressione Enter para continuar...")
+        enter_continuar()
     
     def menu_visualizar_missao(self, meta_id, missao_id):
         """Menu de visualização e edição de uma missão específica"""
@@ -284,7 +284,7 @@ class MenuMetas:
             missao = self.gd.obter_missao(self.username, meta_id, missao_id)
             if not missao:
                 print(cores.VERMELHO + "Missão não encontrada!" + cores.NORMAL)
-                input("\nPressione Enter para continuar...")
+                enter_continuar()
                 return
             
             # Exibe informações da missão
@@ -326,7 +326,7 @@ class MenuMetas:
                 return
             else:
                 print(cores.VERMELHO + "Opção não reconhecida!" + cores.NORMAL)
-                input("\nPressione Enter para continuar...")
+                enter_continuar()
     
     def alternar_status_missao(self, meta_id, missao_id, status_atual):
         """Alterna o status de conclusão de uma missão"""
@@ -344,7 +344,7 @@ class MenuMetas:
         else:
             print(cores.VERMELHO + msg + cores.NORMAL)
         
-        input("\nPressione Enter para continuar...")
+        enter_continuar()
     
     def editar_missao(self, meta_id, missao_id):
         """Edita uma missão existente"""
@@ -372,7 +372,7 @@ class MenuMetas:
             limpar_terminal()
             print(cores.AMARELO + "Nome não pode ser vazio. Operação cancelada." + cores.NORMAL)
         
-        input("\nPressione Enter para continuar...")
+        enter_continuar()
     
     def excluir_missao(self, meta_id, missao_id):
         """Exclui uma missão"""
@@ -391,10 +391,10 @@ class MenuMetas:
                 print(cores.VERDE + msg + cores.NORMAL)
             else:
                 print(cores.VERMELHO + msg + cores.NORMAL)
-            input("\nPressione Enter para continuar...")
+            enter_continuar()
             return True
         else:
             limpar_terminal()
             print(cores.AMARELO + "Operação cancelada." + cores.NORMAL)
-            input("\nPressione Enter para continuar...")
+            enter_continuar()
             return False

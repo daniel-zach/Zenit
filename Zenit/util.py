@@ -14,3 +14,6 @@ def limpar_terminal():
         _ = os.system("cls")
     else:
         _ = os.system("clear")
+
+def enter_continuar():
+    input("\nPressione Enter para continuar...")
