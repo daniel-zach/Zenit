@@ -1,45 +1,28 @@
-import json
-import os
-from datetime import datetime
 from util import cores, limpar_terminal
+from gerenciador_dados import GerenciadorDados
 
 class GerenciadorUsuarios:
-    def __init__(self, arquivo='usuarios.json'):
-        self.arquivo = arquivo
-        self.usuarios = self.carregar_usuarios()
-    
-    def carregar_usuarios(self):
-        """Carrega usuários do arquivo JSON"""
-        if os.path.exists(self.arquivo):
-            try:
-                with open(self.arquivo, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except json.JSONDecodeError:
-                return {}
-        return {}
-    
-    def salvar_usuarios(self):
-        """Salva usuários no arquivo JSON"""
-        with open(self.arquivo, 'w', encoding='utf-8') as f:
-            json.dump(self.usuarios, f, ensure_ascii=False, indent=4)
+    def __init__(self):
+        self.gd = GerenciadorDados()
     
     def criar_usuario(self):
         """Cria um novo usuário"""
+        limpar_terminal()
         print("\n=== CRIAR NOVO USUÁRIO ===")
         
         # Nome de usuário
         while True:
-            username = input("Nome de usuário: ").strip()
+            username = input("Nome de usuário: ").strip().lower()
             if not username:
                 print("Nome de usuário não pode ser vazio!")
                 continue
             if " " in username:
-                print("Nome de usuário não poder conter espaços!")
+                print("Nome de usuário não pode conter espaços!")
                 continue
-            if len(username) <3:
+            if len(username) < 3:
                 print("Nome de usuário deve conter pelo menos 3 caracteres!")
                 continue
-            if username in self.usuarios:
+            if self.gd.obter_usuario(username):
                 print("Nome de usuário já existe!")
                 continue
             break
@@ -51,18 +34,18 @@ class GerenciadorUsuarios:
         
         # Tempo dedicado
         print("\nQuanto tempo você quer dedicar por dia?")
-        print("1. 10 minutos")
-        print("2. 15 minutos")
-        print("3. 30 minutos")
-        print("4. 1 hora")
-        print("5. 2 horas ou mais")
+        print("[1] 10 minutos")
+        print("[2] 15 minutos")
+        print("[3] 30 minutos")
+        print("[4] 1 hora")
+        print("[5] 2 horas ou mais")
         
         opcoes_tempo = {
-            '1': 10/60,  # 10 minutos em horas
-            '2': 15/60,  # 15 minutos em horas
-            '3': 30/60,  # 30 minutos em horas
-            '4': 1,    # 1 hora
-            '5': 2    # 2 horas
+            '1': 10/60,
+            '2': 15/60,
+            '3': 30/60,
+            '4': 1,
+            '5': 2
         }
         
         tempo_labels = {
@@ -82,138 +65,191 @@ class GerenciadorUsuarios:
             else:
                 print("Opção inválida! Escolha entre 1 e 5.")
         
-        # Criar usuário
-        self.usuarios[username] = {
-            "nome_real": nome_real,
-            "tempo_diario": tempo_horas,
-            "tempo_label": tempo_label,
-            "data_criacao": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        }
+        # Criar usuário usando o GerenciadorDados
+        sucesso, msg = self.gd.criar_usuario(username, nome_real, tempo_horas, tempo_label)
+        print(f"\n{cores.VERDE if sucesso else cores.VERMELHO}{msg}{cores.NORMAL}")
         
-        self.salvar_usuarios()
-        print(f"\nUsuário '{username}' criado com sucesso!")
+        return username if sucesso else None
     
     def listar_usuarios(self):
         """Lista todos os usuários"""
-        if not self.usuarios:
+        limpar_terminal()
+        usuarios = self.gd.listar_usuarios()
+        
+        if not usuarios:
             print("\nNenhum usuário cadastrado.")
             return
         
         print("\n=== USUÁRIOS CADASTRADOS ===")
-        for username, dados in self.usuarios.items():
+        for username, dados in usuarios.items():
             print(f"\nUsername: {username}")
             print(f"  Nome: {dados['nome_real']}")
             print(f"  Tempo diário: {dados.get('tempo_label', str(dados['tempo_diario']) + ' horas')}")
             print(f"  Criado em: {dados['data_criacao']}")
+            print(f"  Metas cadastradas: {len(dados.get('metas', {}))}")
     
     def visualizar_usuario(self):
         """Visualiza detalhes de um usuário específico"""
-        if not self.usuarios:
+        limpar_terminal()
+        usuarios = self.gd.listar_usuarios()
+        
+        if not usuarios:
             print("\nNenhum usuário cadastrado.")
             return
         
-        username = input("\nDigite o nome de usuario: ").strip()
+        username = input("\nDigite o nome de usuário: ").strip().lower()
+        dados = self.gd.obter_usuario(username)
         
-        if username not in self.usuarios:
-            print(f"Usuário '{username}' não encontrado.")
+        if not dados:
+            print(f"{cores.VERMELHO}Usuário '{username}' não encontrado.{cores.NORMAL}")
             return
         
-        dados = self.usuarios[username]
+        # Obter estatísticas
+        stats = self.gd.obter_estatisticas(username)
+        
         print(f"\n=== PERFIL: {username} ===")
         print(f"Nome: {dados['nome_real']}")
         print(f"Tempo diário: {dados.get('tempo_label', str(dados['tempo_diario']) + ' horas')}")
         print(f"Criado em: {dados['data_criacao']}")
+        print(f"\n--- Estatísticas ---")
+        print(f"Metas: {stats['total_metas']}")
+        print(f"Missões totais: {stats['total_missoes']}")
+        print(f"Missões completas: {stats['missoes_completas']}")
+        print(f"Missões pendentes: {stats['missoes_pendentes']}")
+        if stats['total_missoes'] > 0:
+            print(f"Taxa de conclusão: {stats['taxa_conclusao']:.1f}%")
     
     def editar_usuario(self):
         """Edita informações de um usuário"""
-        if not self.usuarios:
+        limpar_terminal()
+        usuarios = self.gd.listar_usuarios()
+        
+        if not usuarios:
             print("\nNenhum usuário cadastrado.")
             return
         
-        username = input("\nDigite o nome de usuário para editar: ").strip()
+        username = input("\nDigite o nome de usuário para editar: ").strip().lower()
+        dados = self.gd.obter_usuario(username)
         
-        if username not in self.usuarios:
-            print(f"Usuário '{username}' não encontrado.")
+        if not dados:
+            print(f"{cores.VERMELHO}Usuário '{username}' não encontrado.{cores.NORMAL}")
             return
         
-        dados = self.usuarios[username]
         print(f"\n=== EDITANDO: {username} ===")
         
         # Editar nome real
         novo_nome = input(f"Nome [{dados['nome_real']}]: ").strip()
-        if novo_nome:
-            dados['nome_real'] = novo_nome
+        nome_final = novo_nome if novo_nome else None
         
         # Editar tempo diário
-        while True:
-            novo_tempo = input(f"Tempo diário em horas [{dados['tempo_diario']}]: ").strip()
-            if not novo_tempo:
-                break
-            try:
-                tempo_horas = float(novo_tempo)
-                if tempo_horas <= 0:
-                    print("O tempo deve ser maior que zero!")
-                    continue
-                dados['tempo_diario'] = tempo_horas
-                break
-            except ValueError:
-                print("Por favor, digite um número válido!")
+        tempo_final = None
+        tempo_label_final = None
         
-        self.salvar_usuarios()
-        print(f"\nUsuário '{username}' atualizado com sucesso!")
+        print("\nDeseja alterar o tempo diário? (s/n): ", end="")
+        if input().strip().lower() == 's':
+            print("\nQuanto tempo você quer dedicar por dia?")
+            print("[1] 10 minutos")
+            print("[2] 15 minutos")
+            print("[3] 30 minutos")
+            print("[4] 1 hora")
+            print("[5] 2 horas ou mais")
+            
+            opcoes_tempo = {
+                '1': (10/60, '10 minutos'),
+                '2': (15/60, '15 minutos'),
+                '3': (30/60, '30 minutos'),
+                '4': (1, '1 hora'),
+                '5': (2, '2 horas ou mais')
+            }
+            
+            opcao = input("Opção: ").strip()
+            if opcao in opcoes_tempo:
+                tempo_final, tempo_label_final = opcoes_tempo[opcao]
+        
+        # Atualizar no GerenciadorDados
+        sucesso, msg = self.gd.atualizar_usuario(
+            username, 
+            nome_real=nome_final,
+            tempo_diario=tempo_final,
+            tempo_label=tempo_label_final
+        )
+        
+        print(f"\n{cores.VERDE if sucesso else cores.VERMELHO}{msg}{cores.NORMAL}")
     
     def excluir_usuario(self):
         """Exclui um usuário"""
-        if not self.usuarios:
+        limpar_terminal()
+        usuarios = self.gd.listar_usuarios()
+        
+        if not usuarios:
             print("\nNenhum usuário cadastrado.")
             return
         
-        username = input("\nDigite o nome de usuário para excluir: ").strip()
+        username = input("\nDigite o nome de usuário para excluir: ").strip().lower()
         
-        if username not in self.usuarios:
-            print(f"Usuario '{username}' nao encontrado.")
+        if not self.gd.obter_usuario(username):
+            print(f"{cores.VERMELHO}Usuário '{username}' não encontrado.{cores.NORMAL}")
             return
         
-        confirma = input(f"Tem certeza que deseja excluir '{username}'? (s/n): ").strip().lower()
+        # Mostrar quantas metas/missões serão perdidas
+        stats = self.gd.obter_estatisticas(username)
+        print(f"\n{cores.AMARELO}ATENÇÃO: Isso excluirá:{cores.NORMAL}")
+        print(f"  - {stats['total_metas']} meta(s)")
+        print(f"  - {stats['total_missoes']} missão(ões)")
+        
+        confirma = input(f"\nTem certeza que deseja excluir '{username}'? (s/n): ").strip().lower()
         
         if confirma == 's':
-            del self.usuarios[username]
-            self.salvar_usuarios()
-            print(f"Usuário '{username}' excluído com sucesso!")
+            sucesso, msg = self.gd.excluir_usuario(username)
+            print(f"\n{cores.VERDE if sucesso else cores.VERMELHO}{msg}{cores.NORMAL}")
         else:
-            print("Operação cancelada.")
+            print(f"{cores.AMARELO}Operação cancelada.{cores.NORMAL}")
     
-    def menu_principal(self):
+    def menu_principal(self, limpar_proxima=True):
         """Exibe o menu principal dos usuários"""
         while True:
+            if limpar_proxima:
+                limpar_terminal()
             print("\n" + "="*40)
             print("  SISTEMA DE GERENCIAMENTO DE USUÁRIOS")
             print("="*40)
-            print("1. Criar novo usuário")
-            print("2. Listar usuários")
-            print("3. Visualizar usuário")
-            print("4. Editar usuário")
-            print("5. Excluir usuário")
-            print("0. Sair")
+            print("[1] Criar novo usuário")
+            print("[2] Listar usuários")
+            print("[3] Visualizar usuário")
+            print("[4] Editar usuário")
+            print("[5] Excluir usuário")
+            print("[0] Sair")
             print("="*40)
             
             opcao = input("Escolha uma opção: ").strip()
             
             if opcao == '1':
+                limpar_terminal()
                 self.criar_usuario()
+                limpar_proxima = True
             elif opcao == '2':
+                limpar_terminal()
                 self.listar_usuarios()
+                limpar_proxima = False
             elif opcao == '3':
+                limpar_terminal()
                 self.visualizar_usuario()
+                limpar_proxima = False
             elif opcao == '4':
+                limpar_terminal()
                 self.editar_usuario()
+                limpar_proxima = False
             elif opcao == '5':
+                limpar_terminal()
                 self.excluir_usuario()
+                limpar_proxima = False
             elif opcao == '0':
                 print("\nAté logo!")
                 break
             else:
-                print("\nOpcao inválida! Tente novamente.")
+                limpar_terminal()
+                print("\nOpção inválida! Tente novamente.")
+                limpar_proxima = False
 
 if __name__ == "__main__":
     gerenciador = GerenciadorUsuarios()
