@@ -1,6 +1,6 @@
 import json
 import os
-from util import cores, limpar_terminal
+from util import cores, limpar_terminal, enter_continuar
 from metas import MenuMetas
 from usuario import GerenciadorUsuarios
 
@@ -48,7 +48,7 @@ class SistemaMain:
         usuarios = self.gerenciador_usuarios.gd.listar_usuarios()
         if not usuarios:
             print(cores.AMARELO + "Nenhum usuário cadastrado ainda." + cores.NORMAL)
-            input("\nPressione Enter para continuar...")
+            enter_continuar()
             return False
         
         print(cores.VERDE + "=== SELECIONAR USUÁRIO ===" + cores.NORMAL)
@@ -63,7 +63,7 @@ class SistemaMain:
                 self.salvar_usuario_atual(username)
                 dados = usuarios[username]
                 print(cores.VERDE + f"\nUsuário '{dados['nome_real']}' (@{username}) selecionado!" + cores.NORMAL)
-                input("\nPressione Enter para continuar...")
+                enter_continuar()
                 return True
             else:
                 print(cores.VERMELHO + f"Usuário '{username}' não encontrado!" + cores.NORMAL)
@@ -88,7 +88,7 @@ class SistemaMain:
                 if username:
                     self.salvar_usuario_atual(username)
                     print(cores.VERDE + f"\nUsuário '{username}' selecionado automaticamente!" + cores.NORMAL)
-                    input("\nPressione Enter para continuar...")
+                    enter_continuar()
                     return
             elif opcao == "2":
                 if self.selecionar_usuario():
@@ -100,7 +100,7 @@ class SistemaMain:
                 exit()
             else:
                 print(cores.VERMELHO + "Opção inválida!" + cores.NORMAL)
-                input("\nPressione Enter para continuar...")
+                enter_continuar()
     
     def exibir_cabecalho(self):
         """Exibe informações do usuário atual"""
@@ -154,7 +154,7 @@ class SistemaMain:
                     self.menu_metas = MenuMetas(self.usuario_atual)
                 else:
                     print(cores.AMARELO + "Usuário não foi alterado." + cores.NORMAL)
-                    input("\nPressione Enter para continuar...")
+                    enter_continuar()
             elif opcao == "4":
                 self.gerenciador_usuarios.menu_principal()
             elif opcao == "0":
@@ -162,7 +162,7 @@ class SistemaMain:
                 exit()
             else:
                 print(cores.VERMELHO + "Opção não reconhecida!" + cores.NORMAL)
-                input("\nPressione Enter para continuar...")
+                enter_continuar()
     
     def exibir_monitoramento(self):
         """Exibe monitoramento de progresso"""
@@ -170,7 +170,7 @@ class SistemaMain:
         
         if not self.usuario_atual:
             print(cores.VERMELHO + "Nenhum usuário selecionado!" + cores.NORMAL)
-            input("\nPressione Enter para continuar...")
+            enter_continuar()
             return
         
         dados = self.gerenciador_usuarios.gd.obter_usuario(self.usuario_atual)
@@ -218,7 +218,7 @@ class SistemaMain:
                     print(f"\n{meta['nome']}:")
                     print(f"  Sem missões cadastradas")
         
-        input("\n\nPressione Enter para continuar...")
+        enter_continuar()
 
 if __name__ == "__main__":
     sistema = SistemaMain()
