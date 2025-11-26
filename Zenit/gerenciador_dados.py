@@ -1,7 +1,7 @@
 import json
 import os
 from datetime import datetime
-from util import cores
+from util import cores, Tempo
 
 class GerenciadorDados:
     """
@@ -41,6 +41,7 @@ class GerenciadorDados:
             "tempo_label": tempo_label,
             "data_criacao": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
             "streak": 0,
+            "pontos":0,
             "metas": {}
         }
         self.salvar_dados()
@@ -144,7 +145,7 @@ class GerenciadorDados:
     
     # ============= OPERAÇÕES DE MISSÃO ==============
     
-    def criar_missao(self, username, meta_index, nome):
+    def criar_missao(self, username, meta_index, nome, dias_repeticao=1):
         """Cria uma nova missão para uma meta"""
         if username not in self.dados:
             return False, "Usuário não encontrado!"
@@ -153,12 +154,15 @@ class GerenciadorDados:
         
         missoes = self.dados[username]["metas"][meta_index]["missoes"]
         index = str(len(missoes) + 1)
+        data_pendente = Tempo.adicionar_dias((dias_repeticao))
         
         missoes[index] = {
             "nome": nome,
             "index": index,
             "completa": False,
-            "data_criacao": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            "frequencia": dias_repeticao,
+            "data_criacao": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            "data_pendente": data_pendente
         }
         
         self.salvar_dados()
@@ -182,7 +186,7 @@ class GerenciadorDados:
             return {}
         return self.dados[username]["metas"][meta_index]["missoes"]
     
-    def atualizar_missao(self, username, meta_index, missao_index, nome=None, completa=None):
+    def atualizar_missao(self, username, meta_index, missao_index, nome=None, status=None, frequencia=None):
         """Atualiza informações de uma missão"""
         if username not in self.dados:
             return False, "Usuário não encontrado!"
@@ -195,10 +199,12 @@ class GerenciadorDados:
         
         if nome is not None:
             missao["nome"] = nome
-        if completa is not None:
-            missao["completa"] = completa
-            if completa:
+        if status is not None:
+            missao["completa"] = status
+            if status:
                 missao["data_conclusao"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        if frequencia is not None:
+            missao["frequencia"] = frequencia
         
         self.salvar_dados()
         return True, "Missão atualizada com sucesso!"

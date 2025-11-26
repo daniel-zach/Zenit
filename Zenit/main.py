@@ -4,7 +4,6 @@ from util import cores, limpar_terminal, enter_continuar
 from metas import MenuMetas
 from usuario import GerenciadorUsuarios
 
-# BUG o terminal não está limpando corretamente
 # BUG as missoes depois de carregadas não estão sendo atualizadas, precisa reiniciar o menu
 
 class SistemaMain:

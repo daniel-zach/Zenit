@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timedelta
 
 class cores:
     NORMAL = "\x1b[39m"
@@ -17,3 +18,16 @@ def limpar_terminal():
 
 def enter_continuar():
     input("\nPressione Enter para continuar...")
+
+class Tempo:
+    def __init__(self):
+        pass
+
+    def adicionar_dias(self, dias=1, comeco=None):
+        """Retorna uma data somada à X dias."""
+        if comeco is None:
+            comeco = datetime.now()
+        return (comeco + timedelta(days=dias)).strftime("%d/%m/%Y %H:%M:%S")
+    
+    def checar_datas(self, data_p_checar, data):
+        pass

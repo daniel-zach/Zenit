@@ -263,9 +263,21 @@ class MenuMetas:
                 print(cores.VERMELHO + "A missão precisa de um nome!" + cores.NORMAL)
                 continue
             break
+
+        # Tempo em dias em que a missão irá se repetir
+        while True:
+            tempo_repetir = input("Com que frequência gostaria de repetir esta missão: ").strip()
+            if not tempo_repetir:
+                print(cores.VERMELHO + "Por favor defina um tempo." + cores.NORMAL)
+                continue
+            if tempo_repetir.isdigit() and 1 <= int(tempo_repetir) <= 365:
+                dias_repeticao = tempo_repetir
+                break
+            else:
+                print(cores.VERMELHO + "Valor inserido é inválido!" + cores.NORMAL)
         
         # Criar missão usando GerenciadorDados
-        sucesso, msg = self.gd.criar_missao(self.username, meta_id, nome)
+        sucesso, msg = self.gd.criar_missao(self.username, meta_id, nome, dias_repeticao)
         
         limpar_terminal()
         if sucesso:
@@ -353,15 +365,40 @@ class MenuMetas:
         
         print(cores.VERDE + "=== EDITAR MISSÃO ===" + cores.NORMAL)
         print(f"\nNome atual: {missao['nome']}")
+        print(f"Frequência atual: {missao['frequencia']} dias")
+
+        print("\nO que deseja editar?")
+        print("[1] Nome")
+        print("[2] Frequência")
+        print("[3] Ambos")
+        print("[0] Cancelar")
         
-        novo_nome = input("\nNovo nome da missão: ").strip()
+        opcao = input("\nOpção: ").strip()
+
+        novo_nome = None
+        nova_frequencia = None
         
-        if novo_nome:
+        if opcao in ["1","3"]:
+            novo_nome = input("\nNovo nome da missão: ").strip()
+            if not novo_nome:
+                print(cores.AMARELO + "Nome não pode ser vazio. Operação cancelada." + cores.NORMAL)
+                enter_continuar()
+                return
+        
+        if opcao in ["2","3"]:
+            nova_frequencia = input("Nova frequência: ").strip()
+            if not nova_frequencia.isdigit() or not (1 <= int(nova_frequencia) <= 365):
+                print(cores.AMARELO + "Valor inválido. Operação cancelada." + cores.NORMAL)
+                enter_continuar()
+                return
+        
+        if opcao in ["1","2","3"]:
             sucesso, msg = self.gd.atualizar_missao(
                 self.username, 
                 meta_id, 
                 missao_id, 
-                nome=novo_nome
+                nome=novo_nome,
+                frequencia=nova_frequencia
             )
             limpar_terminal()
             if sucesso:
@@ -370,8 +407,7 @@ class MenuMetas:
                 print(cores.VERMELHO + msg + cores.NORMAL)
         else:
             limpar_terminal()
-            print(cores.AMARELO + "Nome não pode ser vazio. Operação cancelada." + cores.NORMAL)
-        
+            print(cores.AMARELO + "Operação cancelada." + cores.NORMAL)
         enter_continuar()
     
     def excluir_missao(self, meta_id, missao_id):
