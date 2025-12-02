@@ -1,10 +1,8 @@
 import json
 import os
-from util import cores, limpar_terminal, enter_continuar
+from util import cores, limpar_terminal, enter_continuar, Tempo
 from metas import MenuMetas
 from usuario import GerenciadorUsuarios
-
-# BUG as missoes depois de carregadas não estão sendo atualizadas, precisa reiniciar o menu
 
 class SistemaMain:
     def __init__(self):
@@ -12,6 +10,15 @@ class SistemaMain:
         self.gerenciador_usuarios = GerenciadorUsuarios()
         self.usuario_atual = self.carregar_usuario_atual()
         self.menu_metas = None
+        
+        # Verifica streak e reseta missões ao iniciar
+        if self.usuario_atual:
+            self.gerenciador_usuarios.gd.verificar_e_resetar_streak(self.usuario_atual)
+            missoes_resetadas = self.gerenciador_usuarios.gd.verificar_e_resetar_missoes(self.usuario_atual)
+            
+            # Notifica sobre missões resetadas (opcional, apenas para debug)
+            if missoes_resetadas > 0:
+                pass  # Silencioso, mas você pode adicionar mensagem se quiser
     
     def carregar_usuario_atual(self):
         """Carrega o usuário atualmente selecionado do arquivo de configuração"""
@@ -32,6 +39,9 @@ class SistemaMain:
         self.usuario_atual = username
         # Atualiza o menu de metas com o novo usuário
         self.menu_metas = MenuMetas(username)
+        # Verifica streak e reseta missões
+        self.gerenciador_usuarios.gd.verificar_e_resetar_streak(username)
+        self.gerenciador_usuarios.gd.verificar_e_resetar_missoes(username)
     
     def limpar_usuario_atual(self):
         """Remove o usuário atual da configuração"""
@@ -109,10 +119,27 @@ class SistemaMain:
             dados_usuario = self.gerenciador_usuarios.gd.obter_usuario(self.usuario_atual)
             if dados_usuario:
                 stats = self.gerenciador_usuarios.gd.obter_estatisticas(self.usuario_atual)
+                streak = stats.get('streak', 0)
+                pendentes_hoje = stats.get('missoes_pendentes_hoje', 0)
+                completas_hoje = stats.get('missoes_completas_hoje', 0)
+                
                 print(cores.AZUL + "="*50)
                 print(f"  Usuário: {dados_usuario['nome_real']} (@{self.usuario_atual})")
                 print(f"  Meta diária: {dados_usuario.get('tempo_label', str(dados_usuario['tempo_diario']) + ' horas')}")
-                print(f"  Metas: {stats['total_metas']} | Missões: {stats['missoes_completas']}/{stats['total_missoes']}")
+                
+                if pendentes_hoje > 0:
+                    print(f"  Metas: {stats['total_metas']} | {cores.AMARELO}Missões para hoje: {completas_hoje}/{pendentes_hoje}{cores.AZUL}")
+                else:
+                    print(f"  Metas: {stats['total_metas']} | Missões: {stats['total_missoes']}")
+
+                pontos = f" | Pontos: {dados_usuario['pontos']}"
+
+                # Exibe streak com emoji de fogo
+                if streak > 0:
+                    print(f"  {cores.VERDE}🔥 Streak: {streak} dia(s){cores.AZUL}"+pontos)
+                else:
+                    print(f"  Streak: {streak} dia(s)")
+                
                 print("="*50 + cores.NORMAL)
     
     def menu_principal(self):
@@ -131,6 +158,7 @@ class SistemaMain:
         opcao = ''
         while opcao != "0":
             limpar_terminal()
+            self.gerenciador_usuarios = GerenciadorUsuarios()
             self.exibir_cabecalho()
             
             print(cores.VERDE + "\nMenu Principal\n" + cores.NORMAL)
@@ -183,11 +211,23 @@ class SistemaMain:
         print(f"Criado em: {dados['data_criacao']}")
         print(f"Meta diária: {dados.get('tempo_label', str(dados['tempo_diario']) + ' horas')}")
         
+        # Informações de Streak
+        streak = stats.get('streak', 0)
+        ultima_missao = stats.get('ultima_missao')
+        
+        print(f"\n{cores.AZUL}--- Streak ---{cores.NORMAL}")
+        if streak > 0:
+            print(f"🔥 {streak} dia(s) consecutivo(s)!")
+            if ultima_missao:
+                print(f"Última missão completa: {Tempo.formatar_tempo_relativo(ultima_missao)}")
+        else:
+            print(f"{cores.AMARELO}Nenhum streak ativo.{cores.NORMAL}\nComplete uma missão hoje para começar!")
+        
         print(f"\n{cores.AZUL}--- Estatísticas Gerais ---{cores.NORMAL}")
         print(f"Total de metas: {stats['total_metas']}")
         print(f"Total de missões: {stats['total_missoes']}")
-        print(f"Missões completas: {cores.VERDE}{stats['missoes_completas']}{cores.NORMAL}")
-        print(f"Missões pendentes: {cores.AMARELO}{stats['missoes_pendentes']}{cores.NORMAL}")
+        print(f"Missões completas: {cores.VERDE}{stats['missoes_completas_hoje']}{cores.NORMAL}")
+        print(f"Missões pendentes: {cores.AMARELO}{stats['missoes_pendentes_hoje']}{cores.NORMAL}")
         
         if stats['total_missoes'] > 0:
             taxa = stats['taxa_conclusao']
@@ -206,13 +246,18 @@ class SistemaMain:
             print(f"\n{cores.AZUL}--- Progresso por Meta ---{cores.NORMAL}")
             for meta_id, meta in metas.items():
                 missoes = meta.get('missoes', {})
+                missoes_hoje = self.gerenciador_usuarios.gd.listar_missoes_pendentes_hoje(
+                    self.usuario_atual, meta_id
+                )
                 total = len(missoes)
                 completas = sum(1 for m in missoes.values() if m.get('completa', False))
+                pendentes_hoje_meta = len(missoes_hoje)
                 
                 if total > 0:
-                    percentual = (completas / total) * 100
                     print(f"\n{meta['nome']}:")
-                    print(f"  Missões: {completas}/{total} ({percentual:.0f}%)")
+                    print(f"  Missões: {total}")
+                    if pendentes_hoje_meta > 0:
+                        print(f"  {cores.AMARELO}Pendentes hoje: {pendentes_hoje_meta}{cores.NORMAL}")
                 else:
                     print(f"\n{meta['nome']}:")
                     print(f"  Sem missões cadastradas")

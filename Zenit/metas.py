@@ -1,4 +1,4 @@
-from util import cores, limpar_terminal, enter_continuar
+from util import cores, limpar_terminal, enter_continuar, Tempo
 from gerenciador_dados import GerenciadorDados
 
 class MenuMetas:
@@ -21,12 +21,15 @@ class MenuMetas:
             if metas:
                 print("\nMetas cadastradas:")
                 for meta_id, meta in metas.items():
-                    # Conta missões completas
-                    missoes = meta.get('missoes', {})
-                    total_missoes = len(missoes)
-                    completas = sum(1 for m in missoes.values() if m.get('completa', False))
+                    # Conta missões completas e pendentes hoje
+                    missoes_hoje = self.gd.listar_missoes_pendentes_hoje(self.username, meta_id)
+                    missoes_todas = meta.get('missoes', {})
+                    completas = sum(1 for m in missoes_todas.values() if m.get('completa', False))
+                    pendentes_hoje = len(missoes_hoje)
                     
-                    status = f"({completas}/{total_missoes})" if total_missoes > 0 else "(sem missões)"
+                    status = f"({completas}/{pendentes_hoje})"
+                    if pendentes_hoje > 0:
+                        status += f" {cores.AMARELO}[{pendentes_hoje} hoje]{cores.NORMAL}"
                     print(f"[{meta_id}] {meta['nome']} {cores.AZUL}{status}{cores.NORMAL}")
             else:
                 print(f"\n{cores.AMARELO}Nenhuma meta cadastrada ainda.{cores.NORMAL}")
@@ -96,13 +99,16 @@ class MenuMetas:
             
             # Estatísticas da meta
             missoes = meta.get('missoes', {})
+            missoes_hoje = self.gd.listar_missoes_pendentes_hoje(self.username, meta_id)
             total_missoes = len(missoes)
             completas = sum(1 for m in missoes.values() if m.get('completa', False))
+            pendentes_hoje = len(missoes_hoje)
             
-            print(f"\nMissões: {completas}/{total_missoes} completas")
-            if total_missoes > 0:
-                percentual = (completas / total_missoes) * 100
-                print(f"Progresso: {percentual:.0f}%")
+            print(f"\nMissões: {total_missoes}")
+            if pendentes_hoje > 0:
+                print(f"{cores.AMARELO}Missões para hoje: {pendentes_hoje}{cores.NORMAL}")
+                percentual = (completas / pendentes_hoje) * 100
+                print(f"{cores.VERDE}Progresso: {percentual:.0f}%{cores.NORMAL}")
             
             print(f"\nCriada em: {meta.get('data_criacao', 'Data desconhecida')}")
             
@@ -220,17 +226,25 @@ class MenuMetas:
             
             print(cores.VERDE + f"Missões de {meta['nome']}\n" + cores.NORMAL)
             print("[C] Criar uma nova missão")
+            print("[T] Ver TODAS as missões")
             
-            # Lista todas as missões
-            missoes = meta.get('missoes', {})
-            if missoes:
-                print("\nMissões cadastradas:")
-                for missao_id, missao in missoes.items():
-                    status = "✓" if missao.get('completa', False) else "○"
-                    cor_status = cores.VERDE if missao.get('completa', False) else cores.NORMAL
-                    print(f"[{missao_id}] {cor_status}{status}{cores.NORMAL} {missao['nome']}")
+            # Lista apenas missões pendentes para hoje
+            missoes_hoje = self.gd.listar_missoes_pendentes_hoje(self.username, meta_id)
+            
+            if missoes_hoje:
+                print(f"\n{cores.AMARELO}Missões pendentes para hoje:{cores.NORMAL}")
+                for missao_id, missao in missoes_hoje.items():
+                    data_pendente = missao.get('data_pendente', '')
+                    tempo_relativo = Tempo.formatar_tempo_relativo(data_pendente)
+                    
+                    if Tempo.e_antes_de_hoje(data_pendente):
+                        # Missão atrasada
+                        print(f"[{missao_id}] {cores.VERMELHO}● {missao['nome']} (ATRASADA){cores.NORMAL}")
+                    else:
+                        # Missão de hoje
+                        print(f"[{missao_id}] {cores.AMARELO}○ {missao['nome']}{cores.NORMAL}")
             else:
-                print(f"\n{cores.AMARELO}Nenhuma missão cadastrada ainda.{cores.NORMAL}")
+                print(f"\n{cores.VERDE}✓ Nenhuma missão pendente para hoje!{cores.NORMAL}")
             
             print(f"\n[0] Voltar ao menu da meta")
             opcao = input("\nEscolha uma opção: ").strip().lower()
@@ -238,7 +252,63 @@ class MenuMetas:
             
             if opcao == "c":
                 self.criar_missao(meta_id)
+            elif opcao == "t":
+                self.menu_todas_missoes(meta_id)
             elif opcao == "0":
+                return
+            else:
+                # Verifica se é um ID de missão válido
+                if opcao in missoes_hoje:
+                    self.menu_visualizar_missao(meta_id, opcao)
+                else:
+                    print(cores.VERMELHO + "Opção não reconhecida!" + cores.NORMAL)
+                    enter_continuar()
+    
+    def menu_todas_missoes(self, meta_id):
+        """Mostra todas as missões (completas e futuras)"""
+        opcao = ''
+        while opcao != "0":
+            limpar_terminal()
+            
+            meta = self.gd.obter_meta(self.username, meta_id)
+            if not meta:
+                print(cores.VERMELHO + "Meta não encontrada!" + cores.NORMAL)
+                enter_continuar()
+                return
+            
+            print(cores.VERDE + f"Todas as Missões de {meta['nome']}\n" + cores.NORMAL)
+            
+            # Lista todas as missões
+            missoes = meta.get('missoes', {})
+            if missoes:
+                print("Missões cadastradas:")
+                for missao_id, missao in missoes.items():
+                    completa = missao.get('completa', False)
+                    data_pendente = missao.get('data_pendente', '')
+                    tempo_relativo = Tempo.formatar_tempo_relativo(data_pendente)
+                    
+                    if completa:
+                        status = f"{cores.VERDE}✓{cores.NORMAL}"
+                        info = f"(Completa)"
+                    elif Tempo.e_hoje(data_pendente):
+                        status = f"{cores.AMARELO}○{cores.NORMAL}"
+                        info = f"(Hoje)"
+                    elif Tempo.e_antes_de_hoje(data_pendente):
+                        status = f"{cores.VERMELHO}●{cores.NORMAL}"
+                        info = f"(Atrasada)"
+                    else:
+                        status = "◌"
+                        info = f"({tempo_relativo})"
+                    
+                    print(f"[{missao_id}] {status} {missao['nome']} {cores.AZUL}{info}{cores.NORMAL}")
+            else:
+                print(f"{cores.AMARELO}Nenhuma missão cadastrada ainda.{cores.NORMAL}")
+            
+            print(f"\n[0] Voltar")
+            opcao = input("\nEscolha uma opção: ").strip().lower()
+            limpar_terminal()
+            
+            if opcao == "0":
                 return
             else:
                 # Verifica se é um ID de missão válido
@@ -266,7 +336,7 @@ class MenuMetas:
 
         # Tempo em dias em que a missão irá se repetir
         while True:
-            tempo_repetir = input("Com que frequência gostaria de repetir esta missão: ").strip()
+            tempo_repetir = input("Com que frequência gostaria de repetir esta missão (dias): ").strip()
             if not tempo_repetir:
                 print(cores.VERMELHO + "Por favor defina um tempo." + cores.NORMAL)
                 continue
@@ -274,7 +344,7 @@ class MenuMetas:
                 dias_repeticao = tempo_repetir
                 break
             else:
-                print(cores.VERMELHO + "Valor inserido é inválido!" + cores.NORMAL)
+                print(cores.VERMELHO + "Valor inserido é inválido! (1-365 dias)" + cores.NORMAL)
         
         # Criar missão usando GerenciadorDados
         sucesso, msg = self.gd.criar_missao(self.username, meta_id, nome, dias_repeticao)
@@ -307,6 +377,16 @@ class MenuMetas:
             completa = missao.get('completa', False)
             status_texto = f"{cores.VERDE}COMPLETA ✓{cores.NORMAL}" if completa else f"{cores.AMARELO}PENDENTE ○{cores.NORMAL}"
             print(f"\nStatus: {status_texto}")
+            
+            data_pendente = missao.get('data_pendente', '')
+            if data_pendente:
+                tempo_relativo = Tempo.formatar_tempo_relativo(data_pendente)
+                if Tempo.e_antes_de_hoje(data_pendente) and not completa:
+                    print(f"{cores.VERMELHO}Próxima: {tempo_relativo} (ATRASADA){cores.NORMAL}")
+                else:
+                    print(f"Próxima: {tempo_relativo}")
+            
+            print(f"Frequência: A cada {missao.get('frequencia', 1)} dia(s)")
             print(f"Criada em: {missao.get('data_criacao', 'Data desconhecida')}")
             
             if completa and 'data_conclusao' in missao:
@@ -352,7 +432,15 @@ class MenuMetas:
         
         if sucesso:
             texto_status = "completa" if novo_status else "pendente"
-            print(cores.VERDE + f"Missão marcada como {texto_status}!" + cores.NORMAL)
+            mensagem = f"Missão marcada como {texto_status}!"
+            
+            if novo_status:
+                # Mostra informação sobre streak
+                stats = self.gd.obter_estatisticas(self.username)
+                streak = stats.get('streak', 0)
+                mensagem += f"\n{cores.VERDE}🔥 Streak: {streak} dia(s)!{cores.NORMAL}"
+            
+            print(cores.VERDE + mensagem + cores.NORMAL)
         else:
             print(cores.VERMELHO + msg + cores.NORMAL)
         
@@ -386,7 +474,7 @@ class MenuMetas:
                 return
         
         if opcao in ["2","3"]:
-            nova_frequencia = input("Nova frequência: ").strip()
+            nova_frequencia = input("Nova frequência (dias): ").strip()
             if not nova_frequencia.isdigit() or not (1 <= int(nova_frequencia) <= 365):
                 print(cores.AMARELO + "Valor inválido. Operação cancelada." + cores.NORMAL)
                 enter_continuar()

@@ -39,9 +39,10 @@ class GerenciadorDados:
             "nome_real": nome_real,
             "tempo_diario": tempo_diario,
             "tempo_label": tempo_label,
-            "data_criacao": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            "data_criacao": Tempo.agora(),
             "streak": 0,
-            "pontos":0,
+            "pontos": 0,
+            "ultima_missao_completa": None,  # Data da última missão concluída
             "metas": {}
         }
         self.salvar_dados()
@@ -93,7 +94,7 @@ class GerenciadorDados:
             "nome": nome,
             "descricao": descricao,
             "index": index,
-            "data_criacao": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            "data_criacao": Tempo.agora(),
             "missoes": {}
         }
         
@@ -154,15 +155,14 @@ class GerenciadorDados:
         
         missoes = self.dados[username]["metas"][meta_index]["missoes"]
         index = str(len(missoes) + 1)
-        data_pendente = Tempo.adicionar_dias((dias_repeticao))
         
         missoes[index] = {
             "nome": nome,
             "index": index,
             "completa": False,
-            "frequencia": dias_repeticao,
-            "data_criacao": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-            "data_pendente": data_pendente
+            "frequencia": int(dias_repeticao),
+            "data_criacao": Tempo.agora(),
+            "data_pendente": Tempo.agora()
         }
         
         self.salvar_dados()
@@ -186,7 +186,21 @@ class GerenciadorDados:
             return {}
         return self.dados[username]["metas"][meta_index]["missoes"]
     
-    def atualizar_missao(self, username, meta_index, missao_index, nome=None, status=None, frequencia=None):
+    def listar_missoes_pendentes_hoje(self, username, meta_index):
+        """Retorna apenas missões pendentes para hoje"""
+        todas_missoes = self.listar_missoes(username, meta_index)
+        
+        missoes_hoje = {}
+        for missao_id, missao in todas_missoes.items():
+            data_pendente = missao.get('data_pendente')
+            # Mostra missão se: está pendente E (é hoje OU já passou da data)
+            if not missao.get('completa', False) and data_pendente:
+                if Tempo.e_hoje(data_pendente) or Tempo.e_antes_de_hoje(data_pendente):
+                    missoes_hoje[missao_id] = missao
+        
+        return missoes_hoje
+    
+    def atualizar_missao(self, username, meta_index, missao_index, nome=None, completa=None, frequencia=None):
         """Atualiza informações de uma missão"""
         if username not in self.dados:
             return False, "Usuário não encontrado!"
@@ -199,12 +213,29 @@ class GerenciadorDados:
         
         if nome is not None:
             missao["nome"] = nome
-        if status is not None:
-            missao["completa"] = status
-            if status:
-                missao["data_conclusao"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        
+        if completa is not None:
+            status_anterior = missao.get("completa", False)
+            missao["completa"] = completa
+            
+            if completa and not status_anterior:
+                # Missão foi marcada como completa
+                missao["data_conclusao"] = Tempo.agora()
+                
+                # Atualiza data_pendente para próxima ocorrência
+                frequencia = missao.get("frequencia", 1)
+                missao["data_pendente"] = Tempo.adicionar_dias(frequencia)
+                
+                # Atualiza streak
+                self._atualizar_streak(username)
+                
+            elif not completa and status_anterior:
+                # Missão foi desmarcada
+                if "data_conclusao" in missao:
+                    del missao["data_conclusao"]
+        
         if frequencia is not None:
-            missao["frequencia"] = frequencia
+            missao["frequencia"] = int(frequencia)
         
         self.salvar_dados()
         return True, "Missão atualizada com sucesso!"
@@ -223,27 +254,95 @@ class GerenciadorDados:
         self.salvar_dados()
         return True, f"Missão '{nome_missao}' excluída!"
     
-    # ============ UTILITÁRIOS ===============
+    # ============ SISTEMA DE STREAKS ===============
     
-    def resetar_missoes_diarias(self, username):
-        """Reseta todas as missões completas de um usuário (para sistema de streak)"""
+    def _atualizar_streak(self, username):
+        """Atualiza o streak quando uma missão é concluída"""
         if username not in self.dados:
-            return False, "Usuário não encontrado!"
+            return
         
-        contador = 0
-        for meta_index in self.dados[username]["metas"]:
-            for missao_index in self.dados[username]["metas"][meta_index]["missoes"]:
-                missao = self.dados[username]["metas"][meta_index]["missoes"][missao_index]
-                if missao["completa"]:
-                    missao["completa"] = False
-                    contador += 1
+        usuario = self.dados[username]
+        ultima_conclusao = usuario.get("ultima_missao_completa")
         
-        if contador > 0:
-            self.salvar_dados()
+        if ultima_conclusao is None:
+            # Primeira missão concluída
+            usuario["streak"] = 1
+            usuario["ultima_missao_completa"] = Tempo.hoje()
+        elif Tempo.e_hoje(ultima_conclusao):
+            # Já completou uma missão hoje, streak não muda
+            pass
+        elif Tempo.foi_ontem(ultima_conclusao):
+            # Completou ontem, mantém streak e incrementa
+            usuario["streak"] += 1
+            usuario["ultima_missao_completa"] = Tempo.hoje()
         else:
-            return False, f"Missões já estão zeradas"
+            # Quebrou o streak
+            usuario["streak"] = 1
+            usuario["ultima_missao_completa"] = Tempo.hoje()
         
-        return True, f"{contador} missões resetadas!"
+        self.salvar_dados()
+    
+    def verificar_e_resetar_streak(self, username):
+        """Verifica se o streak deve ser resetado (chamado ao iniciar o sistema)"""
+        if username not in self.dados:
+            return False
+        
+        usuario = self.dados[username]
+        ultima_conclusao = usuario.get("ultima_missao_completa")
+        
+        if ultima_conclusao is None:
+            # Nunca completou missões
+            return False
+        
+        if Tempo.e_hoje(ultima_conclusao) or Tempo.foi_ontem(ultima_conclusao):
+            # Streak está ativo
+            return False
+        
+        # Quebrou o streak (não completou ontem nem hoje)
+        usuario["streak"] = 0
+        self.salvar_dados()
+        return True
+    
+    def verificar_e_resetar_missoes(self, username):
+        """
+        Verifica e reseta missões que chegaram na data de repetição.
+        Se hoje >= data_pendente E missão está completa, reseta a missão.
+        """
+        if username not in self.dados:
+            return 0
+        
+        contador_resetadas = 0
+        
+        for meta_id in self.dados[username]["metas"]:
+            for missao_id in self.dados[username]["metas"][meta_id]["missoes"]:
+                missao = self.dados[username]["metas"][meta_id]["missoes"][missao_id]
+                
+                # Verifica se a missão está completa
+                if not missao.get("completa", False):
+                    continue
+                
+                # Verifica se chegou ou passou da data de repetição
+                data_pendente = missao.get("data_pendente")
+                if data_pendente and (Tempo.e_hoje(data_pendente) or Tempo.e_antes_de_hoje(data_pendente)):
+                    # Reseta a missão
+                    missao["completa"] = False
+                    
+                    # Atualiza a próxima data pendente
+                    frequencia = missao.get("frequencia", 1)
+                    missao["data_pendente"] = Tempo.adicionar_dias(frequencia)
+                    
+                    # Remove data de conclusão anterior
+                    if "data_conclusao" in missao:
+                        del missao["data_conclusao"]
+                    
+                    contador_resetadas += 1
+        
+        if contador_resetadas > 0:
+            self.salvar_dados()
+        
+        return contador_resetadas
+    
+    # ============ UTILITÁRIOS ===============
     
     def obter_estatisticas(self, username):
         """Retorna estatísticas de um usuário"""
@@ -254,19 +353,39 @@ class GerenciadorDados:
         total_metas = len(usuario["metas"])
         total_missoes = 0
         missoes_completas = 0
+        missoes_pendentes_hoje = 0
+        missoes_completas_hoje = 0
+        total_missoes_hoje = 0
         
         for meta in usuario["metas"].values():
             total_missoes += len(meta["missoes"])
             for missao in meta["missoes"].values():
+                data_pendente = missao.get('data_pendente')
+                
+                # Conta missões completas (geral)
                 if missao["completa"]:
                     missoes_completas += 1
+                
+                # Verifica se é uma missão de hoje
+                if data_pendente and (Tempo.e_hoje(data_pendente) or Tempo.e_antes_de_hoje(data_pendente)):
+                    total_missoes_hoje += 1
+                    
+                    if missao["completa"]:
+                        missoes_completas_hoje += 1
+                    else:
+                        missoes_pendentes_hoje += 1
         
         return {
             "total_metas": total_metas,
             "total_missoes": total_missoes,
             "missoes_completas": missoes_completas,
             "missoes_pendentes": total_missoes - missoes_completas,
-            "taxa_conclusao": (missoes_completas / total_missoes * 100) if total_missoes > 0 else 0
+            "missoes_pendentes_hoje": missoes_pendentes_hoje,
+            "missoes_completas_hoje": missoes_completas_hoje,
+            "total_missoes_hoje": total_missoes_hoje,
+            "taxa_conclusao": (missoes_completas_hoje / missoes_completas_hoje * 100) if missoes_completas_hoje > 0 else 0,
+            "streak": usuario.get("streak", 0),
+            "ultima_missao": usuario.get("ultima_missao_completa")
         }
 
 
@@ -292,11 +411,9 @@ if __name__ == "__main__":
     
     # Estatísticas
     stats = gd.obter_estatisticas("jose")
-    print(f"\nEstatísticas de João:")
+    print(f"\nEstatísticas de José:")
     print(f"Metas: {stats['total_metas']}")
     print(f"Missões: {stats['total_missoes']}")
     print(f"Completas: {stats['missoes_completas']}")
+    print(f"Streak: {stats['streak']} dias")
     print(f"Taxa de conclusão: {stats['taxa_conclusao']:.1f}%")
-    
-    #sucesso, msg = gd.excluir_meta("jose", "1")
-    #print(f"\n{msg}")
