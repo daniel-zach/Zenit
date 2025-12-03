@@ -1,0 +1,185 @@
+{
+  "categorias": {
+    "bem_estar": {
+      "nome": "Bem-Estar",
+      "metas": {
+        "exercicio_diario": {
+          "nome": "Exercício Diário",
+          "descricao": "Atividades simples e regulares para manter o corpo ativo.",
+          "missoes": [
+            {"nome": "Caminhada rápida 20–30 min", "frequencia": 1},
+            {"nome": "Alongamento matinal 5–10 min", "frequencia": 1},
+            {"nome": "Treino de força 20 min", "frequencia": 2},
+            {"nome": "Desafio: prancha 1 min × 2", "frequencia": 1}
+          ]
+        },
+        "alimentacao_saudavel": {
+          "nome": "Alimentação Saudável",
+          "descricao": "Pequenas escolhas diárias para melhorar a nutrição.",
+          "missoes": [
+            {"nome": "Comer 3 porções de frutas/legumes", "frequencia": 1},
+            {"nome": "Refeição equilibrada no almoço", "frequencia": 1},
+            {"nome": "Beber 2L de água", "frequencia": 1},
+            {"nome": "Planejar próxima refeição saudável", "frequencia": 1}
+          ]
+        },
+        "sono": {
+          "nome": "Qualidade do Sono",
+          "descricao": "Rotina simples para melhorar descanso e recuperação.",
+          "missoes": [
+            {"nome": "Evitar telas 1h antes de dormir", "frequencia": 1},
+            {"nome": "Dormir no horário-alvo", "frequencia": 1},
+            {"nome": "Atividade relaxante antes de dormir (10 min)", "frequencia": 1}
+          ]
+        },
+        "autocuidado": {
+          "nome": "Autocuidado Diário",
+          "descricao": "Práticas curtas para reduzir estresse e melhorar bem-estar emocional.",
+          "missoes": [
+            {"nome": "30–60 min offline", "frequencia": 1},
+            {"nome": "Alongamento leve ou automassagem 5–10 min", "frequencia": 1},
+            {"nome": "Check-in emocional (2 min)", "frequencia": 1}
+          ]
+        }
+      }
+    },
+
+    "produtividade_desenvolvimento": {
+      "nome": "Produtividade & Desenvolvimento",
+      "metas": {
+        "trabalho_focado": {
+          "nome": "Trabalho Focado",
+          "descricao": "Estruturar o dia com blocos produtivos e controle de prioridades.",
+          "missoes": [
+            {"nome": "Definir 3 tarefas principais do dia", "frequencia": 1},
+            {"nome": "2 blocos de foco (Pomodoro)", "frequencia": 1},
+            {"nome": "Pausa ativa a cada 90 minutos", "frequencia": 1},
+            {"nome": "Revisar progresso diário", "frequencia": 1}
+          ]
+        },
+        "estudos": {
+          "nome": "Rotina de Estudos",
+          "descricao": "Estudo focado com revisões simples e metas pequenas.",
+          "missoes": [
+            {"nome": "Estudar 45–60 min", "frequencia": 1},
+            {"nome": "Revisar notas 10–15 min", "frequencia": 1},
+            {"nome": "Exercícios práticos 30 min", "frequencia": 2},
+            {"nome": "Resumo de 5 linhas", "frequencia": 1}
+          ]
+        },
+        "idiomas": {
+          "nome": "Aprendizado de Idiomas",
+          "descricao": "Práticas curtas e variadas para manter evolução constante.",
+          "missoes": [
+            {"nome": "App de idiomas 15–20 min", "frequencia": 1},
+            {"nome": "Praticar fala 5–10 min", "frequencia": 1},
+            {"nome": "Revisar 10 palavras novas", "frequencia": 1},
+            {"nome": "Ouvir conteúdo nativo 10–20 min", "frequencia": 2}
+          ]
+        },
+        "leitura": {
+          "nome": "Hábito de Leitura",
+          "descricao": "Leitura diária leve com anotações curtas para retenção.",
+          "missoes": [
+            {"nome": "Ler 20–30 min", "frequencia": 1},
+            {"nome": "Anotar 3 ideias-chave", "frequencia": 1},
+            {"nome": "Finalizar capítulo ou seção", "frequencia": 2}
+          ]
+        }
+      }
+    },
+
+    "criatividade_hobbies": {
+      "nome": "Criatividade & Hobbies",
+      "metas": {
+        "arte": {
+          "nome": "Prática Artística",
+          "descricao": "Exercitar criatividade com atividades rápidas e variadas.",
+          "missoes": [
+            {"nome": "Desenhar ou pintar 20–30 min", "frequencia": 1},
+            {"nome": "Tutorial curto de técnica", "frequencia": 3},
+            {"nome": "Sketch de 10 min", "frequencia": 1},
+            {"nome": "Registrar progresso com foto", "frequencia": 3}
+          ]
+        },
+        "musica": {
+          "nome": "Prática Musical",
+          "descricao": "Treino consistente com sessões curtas e foco técnico.",
+          "missoes": [
+            {"nome": "Praticar instrumento 25–40 min", "frequencia": 1},
+            {"nome": "Estudo técnico 15 min", "frequencia": 2},
+            {"nome": "Ensaiar música curta", "frequencia": 3}
+          ]
+        },
+        "escrita": {
+          "nome": "Escrita Criativa",
+          "descricao": "Desenvolver escrita com exercícios livres e revisões breves.",
+          "missoes": [
+            {"nome": "Escrever 20 min ou 300–500 palavras", "frequencia": 1},
+            {"nome": "Prompt criativo de 10 min", "frequencia": 2},
+            {"nome": "Revisar parágrafo antigo", "frequencia": 3}
+          ]
+        }
+      }
+    },
+
+    "organizacao_vida": {
+      "nome": "Organização da Vida",
+      "metas": {
+        "casa": {
+          "nome": "Casa Organizada",
+          "descricao": "Pequenas rotinas para manter ordem sem esforço excessivo.",
+          "missoes": [
+            {"nome": "Arrumar a cama", "frequencia": 1},
+            {"nome": "Organizar louça do dia", "frequencia": 1},
+            {"nome": "Organizar 10 minutos em um cômodo", "frequencia": 1},
+            {"nome": "Limpeza mais profunda (rotativa)", "frequencia": 7}
+          ]
+        },
+        "financas": {
+          "nome": "Organização Financeira",
+          "descricao": "Controle financeiro leve e consistente em poucos minutos.",
+          "missoes": [
+            {"nome": "Registrar gastos do dia", "frequencia": 1},
+            {"nome": "Checar saldo e pendências", "frequencia": 3},
+            {"nome": "Definir micro-poupança semanal", "frequencia": 7},
+            {"nome": "Estudar tema financeiro (15–20 min)", "frequencia": 14}
+          ]
+        }
+      }
+    },
+
+    "social_sustentavel": {
+      "nome": "Social & Sustentabilidade",
+      "metas": {
+        "conexao_social": {
+          "nome": "Conectar com Pessoas",
+          "descricao": "Pequenas ações para manter vínculos e fortalecer relações.",
+          "missoes": [
+            {"nome": "Enviar mensagem/ligação curta", "frequencia": 2},
+            {"nome": "Elogiar ou agradecer alguém", "frequencia": 1},
+            {"nome": "Planejar encontro ou atividade", "frequencia": 7}
+          ]
+        },
+        "gentileza": {
+          "nome": "Gentileza & Generosidade",
+          "descricao": "Atos simples de impacto positivo no dia de alguém.",
+          "missoes": [
+            {"nome": "Fazer uma boa ação simples", "frequencia": 1},
+            {"nome": "Separar item para doação", "frequencia": 14},
+            {"nome": "Deixar nota de agradecimento ou feedback positivo", "frequencia": 3}
+          ]
+        },
+        "eco": {
+          "nome": "Hábitos Sustentáveis",
+          "descricao": "Ações acessíveis para reduzir impacto ambiental.",
+          "missoes": [
+            {"nome": "Evitar descartáveis no dia", "frequencia": 1},
+            {"nome": "Separar recicláveis", "frequencia": 1},
+            {"nome": "Planejar refeições com menos desperdício", "frequencia": 2}
+          ]
+        }
+      }
+    }
+  }
+}
