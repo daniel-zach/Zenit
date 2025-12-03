@@ -30,7 +30,7 @@ class Loja:
             itens = self.gd.obter_todos_itens(self.username)
             
             print(cores.VERDE + "="*50)
-            print("  🏪 LOJA DE ITENS")
+            print("  LOJA DE ITENS")
             print("="*50 + cores.NORMAL)
             
             print(f"\n{cores.AZUL}Seus pontos: {pontos}{cores.NORMAL}")

@@ -305,7 +305,7 @@ class GerenciadorDados:
                 frequencia = missao.get("frequencia", 1)
                 missao["data_pendente"] = Tempo.adicionar_dias(frequencia)
                 
-                # Calcula pontos: 10 + (5 * horas da meta)
+                # Calcula pontos: 10 + (5 * tempo do usuário em horas) // Por enquanto usa o tempo do usuário, porém deveria usar um sistema de progresso das metas.
                 tempo_diario = self.dados[username].get("tempo_diario", 1)
                 pontos_ganhos = 10 + int(5 * tempo_diario)
                 self.adicionar_pontos(username, pontos_ganhos)
@@ -376,7 +376,7 @@ class GerenciadorDados:
         if Tempo.e_hoje(ultima_conclusao) or Tempo.foi_ontem(ultima_conclusao):
             return False
         
-        # Verifica se tem defesa ofensiva
+        # Verifica se tem defesa
         defesas = self.obter_quantidade_item(username, 'defesa_ofensiva')
         if defesas > 0:
             # Usa uma defesa

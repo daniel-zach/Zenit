@@ -304,7 +304,6 @@ class SistemaMain:
         
         dados = self.gerenciador_usuarios.gd.obter_usuario(self.usuario_atual)
         stats = self.gerenciador_usuarios.gd.obter_estatisticas(self.usuario_atual)
-        itens = self.gerenciador_usuarios.gd.obter_todos_itens(self.usuario_atual)
         
         # Nome do arquivo
         timestamp = Tempo.extrair_data(Tempo.agora()).replace("/", "-")

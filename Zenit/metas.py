@@ -1,3 +1,5 @@
+import json
+import os
 from util import cores, limpar_terminal, enter_continuar, Tempo
 from gerenciador_dados import GerenciadorDados
 
@@ -7,6 +9,19 @@ class MenuMetas:
     def __init__(self, username):
         self.username = username
         self.gd = GerenciadorDados()
+        self.arquivo_presets = 'metas_predefinidas.json'
+        self.presets = self.carregar_presets()
+    
+    def carregar_presets(self):
+        """Carrega as metas predefinidas do arquivo JSON"""
+        if os.path.exists(self.arquivo_presets):
+            try:
+                with open(self.arquivo_presets, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except json.JSONDecodeError:
+                print(f"{cores.AMARELO}Aviso: Erro ao carregar metas predefinidas.{cores.NORMAL}")
+                return {"categorias": {}}
+        return {"categorias": {}}
     
     def menu_principal(self):
         """Menu principal de gerenciamento de metas"""
@@ -15,6 +30,7 @@ class MenuMetas:
             limpar_terminal()
             print(cores.VERDE + "Gerenciar Metas\n" + cores.NORMAL)
             print("[C] Criar uma nova meta")
+            print("[P] Criar meta a partir de predefinição")
             
             # Lista todas as metas do usuário
             metas = self.gd.listar_metas(self.username)
@@ -40,6 +56,8 @@ class MenuMetas:
             
             if opcao == "c":
                 self.criar_meta()
+            elif opcao == "p":
+                self.criar_meta_preset()
             elif opcao == "0":
                 return
             else:
@@ -49,6 +67,123 @@ class MenuMetas:
                 else:
                     print(cores.VERMELHO + "Opção não reconhecida!" + cores.NORMAL)
                     enter_continuar()
+    
+    def criar_meta_preset(self):
+        """Cria uma meta a partir de uma predefinição"""
+        limpar_terminal()
+        
+        categorias = self.presets.get("categorias", {})
+        
+        if not categorias:
+            print(cores.AMARELO + "Nenhuma predefinição disponível!" + cores.NORMAL)
+            enter_continuar()
+            return
+        
+        print(cores.VERDE + "=== CRIAR META A PARTIR DE PREDEFINIÇÃO ===" + cores.NORMAL)
+        print("\nCategorias disponíveis:\n")
+        
+        # Lista categorias
+        cat_lista = list(categorias.items())
+        for i, (cat_id, cat_data) in enumerate(cat_lista, 1):
+            print(f"[{i}] {cat_data['nome']}")
+        
+        print("\n[0] Cancelar")
+        
+        # Escolher categoria
+        while True:
+            escolha_cat = input("\nEscolha uma categoria: ").strip()
+            
+            if escolha_cat == "0":
+                return
+            
+            if escolha_cat.isdigit() and 1 <= int(escolha_cat) <= len(cat_lista):
+                cat_id, cat_data = cat_lista[int(escolha_cat) - 1]
+                break
+            else:
+                print(cores.VERMELHO + "Opção inválida!" + cores.NORMAL)
+        
+        # Lista metas da categoria
+        limpar_terminal()
+        print(cores.VERDE + f"=== {cat_data['nome'].upper()} ===" + cores.NORMAL)
+        print("\nMetas disponíveis:\n")
+        
+        metas_lista = list(cat_data['metas'].items())
+        for idx, (meta_id, meta_data) in enumerate(metas_lista, 1):
+            print(f"[{idx}] {meta_data['nome']}")
+            print(f"    {cores.AZUL}{meta_data['descricao']}{cores.NORMAL}")
+            print(f"    {len(meta_data['missoes'])} missão(ões) incluída(s)\n")
+        
+        print("[0] Voltar")
+        
+        # Escolher meta
+        while True:
+            escolha_meta = input("\nEscolha uma meta: ").strip()
+            
+            if escolha_meta == "0":
+                return
+            
+            if escolha_meta.isdigit() and 1 <= int(escolha_meta) <= len(metas_lista):
+                meta_id, meta_preset = metas_lista[int(escolha_meta) - 1]
+                break
+            else:
+                print(cores.VERMELHO + "Opção inválida!" + cores.NORMAL)
+        
+        # Confirmar criação
+        limpar_terminal()
+        print(cores.VERDE + "=== CONFIRMAR CRIAÇÃO ===" + cores.NORMAL)
+        print(f"\nMeta: {meta_preset['nome']}")
+        print(f"Descrição: {meta_preset['descricao']}")
+        print(f"\nMissões que serão criadas:")
+        
+        for missao in meta_preset['missoes']:
+            freq_texto = "diariamente" if missao['frequencia'] == 1 else f"a cada {missao['frequencia']} dias"
+            print(f"  • {missao['nome']} ({freq_texto})")
+        
+        confirma = input(f"\n{cores.AMARELO}Deseja criar esta meta? (s/n): {cores.NORMAL}").strip().lower()
+        
+        if confirma != 's':
+            limpar_terminal()
+            print(cores.AMARELO + "Operação cancelada." + cores.NORMAL)
+            enter_continuar()
+            return
+        
+        # Criar a meta
+        sucesso, msg = self.gd.criar_meta(
+            self.username, 
+            meta_preset['nome'], 
+            meta_preset['descricao']
+        )
+        
+        if not sucesso:
+            limpar_terminal()
+            print(cores.VERMELHO + msg + cores.NORMAL)
+            enter_continuar()
+            return
+        
+        # Obter o ID da meta recém-criada
+        metas = self.gd.listar_metas(self.username)
+        meta_id = str(len(metas))
+        
+        # Criar todas as missões
+        missoes_criadas = 0
+        for missao_preset in meta_preset['missoes']:
+            sucesso_missao, msg_missao = self.gd.criar_missao(
+                self.username,
+                meta_id,
+                missao_preset['nome'],
+                missao_preset['frequencia']
+            )
+            if sucesso_missao:
+                missoes_criadas += 1
+        
+        # Exibir resultado
+        limpar_terminal()
+        print(cores.VERDE + "="*50)
+        print("  ✓ META CRIADA COM SUCESSO!")
+        print("="*50 + cores.NORMAL)
+        print(f"\nMeta: {meta_preset['nome']}")
+        print(f"Missões criadas: {cores.VERDE}{missoes_criadas}{cores.NORMAL}")
+        enter_continuar()
     
     def criar_meta(self):
         """Cria uma nova meta"""
