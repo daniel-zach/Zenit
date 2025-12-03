@@ -42,8 +42,9 @@ class GerenciadorDados:
             "data_criacao": Tempo.agora(),
             "streak": 0,
             "pontos": 0,
-            "ultima_missao_completa": None,  # Data da última missão concluída
-            "metas": {}
+            "ultima_missao_completa": None,
+            "metas": {},
+            "itens": {'defesa_ofensiva': 0}
         }
         self.salvar_dados()
         return True, "Usuário criado com sucesso!"
@@ -79,6 +80,85 @@ class GerenciadorDados:
         del self.dados[username]
         self.salvar_dados()
         return True, f"Usuário '{username}' e todos seus dados excluídos!"
+    
+    # ============= SISTEMA DE PONTOS ===============
+    
+    def adicionar_pontos(self, username, pontos):
+        """Adiciona pontos ao usuário"""
+        if username not in self.dados:
+            return False, "Usuário não encontrado!"
+        
+        self.dados[username]["pontos"] = self.dados[username].get("pontos", 0) + pontos
+        self.salvar_dados()
+        return True, f"+{pontos} pontos!"
+    
+    def remover_pontos(self, username, pontos):
+        """Remove pontos do usuário"""
+        if username not in self.dados:
+            return False, "Usuário não encontrado!"
+        
+        pontos_atuais = self.dados[username].get("pontos", 0)
+        if pontos_atuais < pontos:
+            return False, "Pontos insuficientes!"
+        
+        self.dados[username]["pontos"] = pontos_atuais - pontos
+        self.salvar_dados()
+        return True, f"-{pontos} pontos!"
+    
+    def obter_pontos(self, username):
+        """Retorna pontos do usuário"""
+        if username not in self.dados:
+            return 0
+        return self.dados[username].get("pontos", 0)
+    
+    # ============= SISTEMA DE ITENS ================
+    
+    def adicionar_item(self, username, item, quantidade=1):
+        """Adiciona um item ao inventário do usuário"""
+        if username not in self.dados:
+            return False, "Usuário não encontrado!"
+        
+        if "itens" not in self.dados[username]:
+            self.dados[username]["itens"] = {}
+        
+        itens = self.dados[username]["itens"]
+        itens[item] = itens.get(item, 0) + quantidade
+        
+        self.salvar_dados()
+        return True, f"+{quantidade} {item}!"
+    
+    def remover_item(self, username, item, quantidade=1):
+        """Remove um item do inventário do usuário"""
+        if username not in self.dados:
+            return False, "Usuário não encontrado!"
+        
+        if "itens" not in self.dados[username]:
+            return False, "Item não encontrado!"
+        
+        itens = self.dados[username]["itens"]
+        quantidade_atual = itens.get(item, 0)
+        
+        if quantidade_atual < quantidade:
+            return False, "Quantidade insuficiente!"
+        
+        itens[item] = quantidade_atual - quantidade
+        self.salvar_dados()
+        return True, f"-{quantidade} {item}!"
+    
+    def obter_quantidade_item(self, username, item):
+        """Retorna quantidade de um item específico"""
+        if username not in self.dados:
+            return 0
+        
+        itens = self.dados[username].get("itens", {})
+        return itens.get(item, 0)
+    
+    def obter_todos_itens(self, username):
+        """Retorna todos os itens do usuário"""
+        if username not in self.dados:
+            return {}
+        
+        return self.dados[username].get("itens", {})
     
     # =========== OPERAÇÕES DE METAS ===============
     
@@ -193,7 +273,6 @@ class GerenciadorDados:
         missoes_hoje = {}
         for missao_id, missao in todas_missoes.items():
             data_pendente = missao.get('data_pendente')
-            # Mostra missão se: está pendente E (é hoje OU já passou da data)
             if not missao.get('completa', False) and data_pendente:
                 if Tempo.e_hoje(data_pendente) or Tempo.e_antes_de_hoje(data_pendente):
                     missoes_hoje[missao_id] = missao
@@ -225,6 +304,11 @@ class GerenciadorDados:
                 # Atualiza data_pendente para próxima ocorrência
                 frequencia = missao.get("frequencia", 1)
                 missao["data_pendente"] = Tempo.adicionar_dias(frequencia)
+                
+                # Calcula pontos: 10 + (5 * horas da meta)
+                tempo_diario = self.dados[username].get("tempo_diario", 1)
+                pontos_ganhos = 10 + int(5 * tempo_diario)
+                self.adicionar_pontos(username, pontos_ganhos)
                 
                 # Atualiza streak
                 self._atualizar_streak(username)
@@ -265,25 +349,21 @@ class GerenciadorDados:
         ultima_conclusao = usuario.get("ultima_missao_completa")
         
         if ultima_conclusao is None:
-            # Primeira missão concluída
             usuario["streak"] = 1
             usuario["ultima_missao_completa"] = Tempo.hoje()
         elif Tempo.e_hoje(ultima_conclusao):
-            # Já completou uma missão hoje, streak não muda
             pass
         elif Tempo.foi_ontem(ultima_conclusao):
-            # Completou ontem, mantém streak e incrementa
             usuario["streak"] += 1
             usuario["ultima_missao_completa"] = Tempo.hoje()
         else:
-            # Quebrou o streak
             usuario["streak"] = 1
             usuario["ultima_missao_completa"] = Tempo.hoje()
         
         self.salvar_dados()
     
     def verificar_e_resetar_streak(self, username):
-        """Verifica se o streak deve ser resetado (chamado ao iniciar o sistema)"""
+        """Verifica se o streak deve ser resetado"""
         if username not in self.dados:
             return False
         
@@ -291,23 +371,27 @@ class GerenciadorDados:
         ultima_conclusao = usuario.get("ultima_missao_completa")
         
         if ultima_conclusao is None:
-            # Nunca completou missões
             return False
         
         if Tempo.e_hoje(ultima_conclusao) or Tempo.foi_ontem(ultima_conclusao):
-            # Streak está ativo
             return False
         
-        # Quebrou o streak (não completou ontem nem hoje)
+        # Verifica se tem defesa ofensiva
+        defesas = self.obter_quantidade_item(username, 'defesa_ofensiva')
+        if defesas > 0:
+            # Usa uma defesa
+            self.remover_item(username, 'defesa_ofensiva', 1)
+            print(f"\n{cores.AZUL}🛡️ Defesa de Ofensiva usada! Seu streak foi protegido.{cores.NORMAL}")
+            print(f"{cores.AMARELO}Defesas restantes: {defesas - 1}{cores.NORMAL}")
+            return False
+        
+        # Quebrou o streak
         usuario["streak"] = 0
         self.salvar_dados()
         return True
     
     def verificar_e_resetar_missoes(self, username):
-        """
-        Verifica e reseta missões que chegaram na data de repetição.
-        Se hoje >= data_pendente E missão está completa, reseta a missão.
-        """
+        """Verifica e reseta missões que chegaram na data de repetição"""
         if username not in self.dados:
             return 0
         
@@ -317,21 +401,15 @@ class GerenciadorDados:
             for missao_id in self.dados[username]["metas"][meta_id]["missoes"]:
                 missao = self.dados[username]["metas"][meta_id]["missoes"][missao_id]
                 
-                # Verifica se a missão está completa
                 if not missao.get("completa", False):
                     continue
                 
-                # Verifica se chegou ou passou da data de repetição
                 data_pendente = missao.get("data_pendente")
                 if data_pendente and (Tempo.e_hoje(data_pendente) or Tempo.e_antes_de_hoje(data_pendente)):
-                    # Reseta a missão
                     missao["completa"] = False
-                    
-                    # Atualiza a próxima data pendente
                     frequencia = missao.get("frequencia", 1)
                     missao["data_pendente"] = Tempo.adicionar_dias(frequencia)
                     
-                    # Remove data de conclusão anterior
                     if "data_conclusao" in missao:
                         del missao["data_conclusao"]
                     
@@ -362,11 +440,9 @@ class GerenciadorDados:
             for missao in meta["missoes"].values():
                 data_pendente = missao.get('data_pendente')
                 
-                # Conta missões completas (geral)
                 if missao["completa"]:
                     missoes_completas += 1
                 
-                # Verifica se é uma missão de hoje
                 if data_pendente and (Tempo.e_hoje(data_pendente) or Tempo.e_antes_de_hoje(data_pendente)):
                     total_missoes_hoje += 1
                     
@@ -383,37 +459,7 @@ class GerenciadorDados:
             "missoes_pendentes_hoje": missoes_pendentes_hoje,
             "missoes_completas_hoje": missoes_completas_hoje,
             "total_missoes_hoje": total_missoes_hoje,
-            "taxa_conclusao": (missoes_completas_hoje / missoes_completas_hoje * 100) if missoes_completas_hoje > 0 else 0,
+            "taxa_conclusao": (missoes_completas_hoje / total_missoes_hoje * 100) if total_missoes_hoje > 0 else 0,
             "streak": usuario.get("streak", 0),
             "ultima_missao": usuario.get("ultima_missao_completa")
         }
-
-
-# Teste do sistema
-if __name__ == "__main__":
-    gd = GerenciadorDados()
-    
-    # Criar usuário
-    sucesso, msg = gd.criar_usuario("jose", "José Silva", 1, "1 hora")
-    print(msg)
-    
-    # Criar meta
-    sucesso, msg = gd.criar_meta("jose", "Estudar Python", "Melhorar habilidades em programação")
-    print(msg)
-    
-    # Criar missões
-    gd.criar_missao("jose", "1", "Estudar listas")
-    gd.criar_missao("jose", "1", "Estudar dicionários")
-    gd.criar_missao("jose", "1", "Fazer exercícios")
-    
-    # Marcar missão como completa
-    gd.atualizar_missao("jose", "1", "1", completa=True)
-    
-    # Estatísticas
-    stats = gd.obter_estatisticas("jose")
-    print(f"\nEstatísticas de José:")
-    print(f"Metas: {stats['total_metas']}")
-    print(f"Missões: {stats['total_missoes']}")
-    print(f"Completas: {stats['missoes_completas']}")
-    print(f"Streak: {stats['streak']} dias")
-    print(f"Taxa de conclusão: {stats['taxa_conclusao']:.1f}%")
