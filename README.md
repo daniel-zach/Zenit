@@ -36,24 +36,21 @@ O projeto será desenvolvido em fases (VAs).
 | **Melhoria da UI** | Melhorias e novos elementos para a TUI. |
 | **Streaks (Sequências)** | Contagem e exibição de sequências de dias consecutivos cumprindo hábitos. |
 | **Sistema de Recompensas** | Resgate de pontos/moedas virtuais por recompensas customizáveis (ex: avatares, temas, itens virtuais). |
-| Criação da Tela de Níveis | Exibição do nível atual do usuário (baseado em pontos de experiência) e barra de progresso. |
-| Diário de Reflexão | Um espaço para o usuário registrar pensamentos sobre o seu dia e os desafios que enfrentou. |
-| Integração com Redes Sociais | Opções de compartilhamento de conquistas. |
 | Biblioteca de Hábitos | Uma lista pré-definida de sugestões de hábitos (saúde, finanças, estudos) com dicas de como começar. |
-| Notificações | Alertas e lembretes configuráveis para manter o usuário engajado. |
+| **Controle de Repetição de Missões** | Permite definir a repetição das missões em intervalos de dias, garantindo regularidade e automação. |
+| Sistema de Pontos | Concede pontos ao completar missões, criando um mecanismo de progressão e recompensa. |
+| **Sistema de Loja** | Exibe inventário, permite compra de itens e realiza dedução automática de pontos. |
+| Defesa de Ofensiva | Item que impede a perda de um streak; limitado a duas unidades por usuário. |
+| Exportar Progresso | Gera um arquivo .txt contendo um relatório detalhado do progresso do usuário. |
+| Classe Tempo | Classe dedicada a operações com datas e horários, incluindo soma de dias e manipulação de formatos temporais. |
 
 ---
 
 ### 📝 Release Notes
 
-## **Zenit 1.1 – Release Notes**
+## **Zenit 2.0 – Release Notes**
 
-### **Visão Geral**  
-A versão **1.1 do Zenit** traz pequenas melhorias voltadas à usabilidade e organização do código.
-
-### **Alterações de Utilidade**  
-- Criada uma nova função no módulo **util**, responsável por exibir a mensagem **"Aperte Enter para continuar..."**.  
-- A implementação visa facilitar a reutilização dessa mensagem em diferentes partes do sistema e permitir futuras modificações de forma centralizada.
+A versão 2.0 do Zenit introduz novos sistemas de progressão, acompanhamento e controle temporal, ampliando a profundidade do gerenciamento de metas e missões. Esta atualização marca uma etapa significativa na evolução do projeto, trazendo recursos que fortalecem engajamento, rastreamento e integração entre módulos.
 
 ---
 

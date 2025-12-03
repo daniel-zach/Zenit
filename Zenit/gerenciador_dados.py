@@ -44,7 +44,7 @@ class GerenciadorDados:
             "pontos": 0,
             "ultima_missao_completa": None,
             "metas": {},
-            "itens": {'defesa_ofensiva': 0}
+            "itens": {}
         }
         self.salvar_dados()
         return True, "Usuário criado com sucesso!"
@@ -312,11 +312,6 @@ class GerenciadorDados:
                 
                 # Atualiza streak
                 self._atualizar_streak(username)
-                
-            elif not completa and status_anterior:
-                # Missão foi desmarcada
-                if "data_conclusao" in missao:
-                    del missao["data_conclusao"]
         
         if frequencia is not None:
             missao["frequencia"] = int(frequencia)
@@ -409,9 +404,6 @@ class GerenciadorDados:
                     missao["completa"] = False
                     frequencia = missao.get("frequencia", 1)
                     missao["data_pendente"] = Tempo.adicionar_dias(frequencia)
-                    
-                    if "data_conclusao" in missao:
-                        del missao["data_conclusao"]
                     
                     contador_resetadas += 1
         
