@@ -33,16 +33,14 @@ O projeto será desenvolvido em fases (VAs).
 
 | Funcionalidade Principal | Descrição |
 | :--- | :--- |
-| **Melhoria da UI** | Melhorias e novos elementos para a TUI. |
-| **Streaks (Sequências)** | Contagem e exibição de sequências de dias consecutivos cumprindo hábitos. |
-| **Sistema de Recompensas** | Resgate de pontos/moedas virtuais por recompensas customizáveis (ex: avatares, temas, itens virtuais). |
+| Melhoria da UI | Melhorias e novos elementos para a TUI. |
+| Streaks (Sequências) | Contagem e exibição de sequências de dias consecutivos cumprindo hábitos. |
+| Sistema de Recompensas | Resgate de pontos/moedas virtuais por recompensas customizáveis. |
 | Biblioteca de Hábitos | Uma lista pré-definida de sugestões de hábitos (saúde, finanças, estudos) com dicas de como começar. |
-| **Controle de Repetição de Missões** | Permite definir a repetição das missões em intervalos de dias, garantindo regularidade e automação. |
-| Sistema de Pontos | Concede pontos ao completar missões, criando um mecanismo de progressão e recompensa. |
-| **Sistema de Loja** | Exibe inventário, permite compra de itens e realiza dedução automática de pontos. |
+| Controle de Repetição de Missões | Permite definir a repetição das missões em intervalos de dias. |
+| Sistema de Loja | Exibe inventário, permite compra de itens e realiza dedução automática de pontos. |
 | Defesa de Ofensiva | Item que impede a perda de um streak; limitado a duas unidades por usuário. |
 | Exportar Progresso | Gera um arquivo .txt contendo um relatório detalhado do progresso do usuário. |
-| Classe Tempo | Classe dedicada a operações com datas e horários, incluindo soma de dias e manipulação de formatos temporais. |
 
 ---
 
@@ -51,6 +49,10 @@ O projeto será desenvolvido em fases (VAs).
 ## **Zenit 2.0 – Release Notes**
 
 A versão 2.0 do Zenit introduz novos sistemas de progressão, acompanhamento e controle temporal, ampliando a profundidade do gerenciamento de metas e missões. Esta atualização marca uma etapa significativa na evolução do projeto, trazendo recursos que fortalecem engajamento, rastreamento e integração entre módulos.
+
+### Classe Tempo
+
+Criada a classe Tempo, responsável por operações com datas e horários, incluindo soma de dias, cálculos temporais e manipulação de formatos de representação.
 
 ---
 
