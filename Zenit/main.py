@@ -1,11 +1,9 @@
 import json
 import os
-from util import cores, limpar_terminal, enter_continuar
+from util import cores, limpar_terminal, enter_continuar, Tempo
 from metas import MenuMetas
 from usuario import GerenciadorUsuarios
-
-# BUG o terminal não está limpando corretamente
-# BUG as missoes depois de carregadas não estão sendo atualizadas, precisa reiniciar o menu
+from loja import Loja
 
 class SistemaMain:
     def __init__(self):
@@ -13,6 +11,17 @@ class SistemaMain:
         self.gerenciador_usuarios = GerenciadorUsuarios()
         self.usuario_atual = self.carregar_usuario_atual()
         self.menu_metas = None
+        self.loja = None
+        
+        # Verifica streak e reseta missões ao iniciar
+        if self.usuario_atual:
+            quebrou_streak = self.gerenciador_usuarios.gd.verificar_e_resetar_streak(self.usuario_atual)
+            missoes_resetadas = self.gerenciador_usuarios.gd.verificar_e_resetar_missoes(self.usuario_atual)
+            
+            # Notifica se quebrou o streak
+            if quebrou_streak:
+                print(f"\n{cores.VERMELHO}❌ Seu streak foi resetado por inatividade.{cores.NORMAL}")
+                enter_continuar()
     
     def carregar_usuario_atual(self):
         """Carrega o usuário atualmente selecionado do arquivo de configuração"""
@@ -31,8 +40,12 @@ class SistemaMain:
         with open(self.arquivo_config, 'w', encoding='utf-8') as f:
             json.dump(config, f, ensure_ascii=False, indent=4)
         self.usuario_atual = username
-        # Atualiza o menu de metas com o novo usuário
+        # Atualiza o menu de metas e loja com o novo usuário
         self.menu_metas = MenuMetas(username)
+        self.loja = Loja(username)
+        # Verifica streak e reseta missões
+        self.gerenciador_usuarios.gd.verificar_e_resetar_streak(username)
+        self.gerenciador_usuarios.gd.verificar_e_resetar_missoes(username)
     
     def limpar_usuario_atual(self):
         """Remove o usuário atual da configuração"""
@@ -40,6 +53,7 @@ class SistemaMain:
             os.remove(self.arquivo_config)
         self.usuario_atual = None
         self.menu_metas = None
+        self.loja = None
     
     def selecionar_usuario(self):
         """Permite selecionar um usuário existente"""
@@ -110,10 +124,26 @@ class SistemaMain:
             dados_usuario = self.gerenciador_usuarios.gd.obter_usuario(self.usuario_atual)
             if dados_usuario:
                 stats = self.gerenciador_usuarios.gd.obter_estatisticas(self.usuario_atual)
+                streak = stats.get('streak', 0)
+                pendentes_hoje = stats.get('missoes_pendentes_hoje', 0)
+                completas_hoje = stats.get('missoes_completas_hoje', 0)
+                pontos = dados_usuario.get('pontos', 0)
+                
                 print(cores.AZUL + "="*50)
                 print(f"  Usuário: {dados_usuario['nome_real']} (@{self.usuario_atual})")
                 print(f"  Meta diária: {dados_usuario.get('tempo_label', str(dados_usuario['tempo_diario']) + ' horas')}")
-                print(f"  Metas: {stats['total_metas']} | Missões: {stats['missoes_completas']}/{stats['total_missoes']}")
+                
+                if pendentes_hoje > 0:
+                    print(f"  Metas: {stats['total_metas']} | {cores.AMARELO}Missões para hoje: {completas_hoje}/{pendentes_hoje}{cores.AZUL}")
+                else:
+                    print(f"  Metas: {stats['total_metas']} | Missões: {stats['total_missoes']}")
+
+                # Exibe streak e pontos
+                if streak > 0:
+                    print(f"  {cores.VERDE}🔥 Streak: {streak} dia(s){cores.AZUL} | Pontos: {pontos}")
+                else:
+                    print(f"  Streak: {streak} dia(s) | Pontos: {pontos}")
+                
                 print("="*50 + cores.NORMAL)
     
     def menu_principal(self):
@@ -124,21 +154,25 @@ class SistemaMain:
         if not self.usuario_atual:
             self.menu_sem_usuario()
         
-        # Inicializa o menu de metas
+        # Inicializa o menu de metas e loja
         if not self.menu_metas:
             self.menu_metas = MenuMetas(self.usuario_atual)
+        if not self.loja:
+            self.loja = Loja(self.usuario_atual)
         
         # Menu principal com usuário selecionado
         opcao = ''
         while opcao != "0":
             limpar_terminal()
+            self.gerenciador_usuarios = GerenciadorUsuarios()
             self.exibir_cabecalho()
             
             print(cores.VERDE + "\nMenu Principal\n" + cores.NORMAL)
             print("[1] Gerenciar Metas")
             print("[2] Monitoramento de Progresso")
-            print("[3] Trocar de usuário")
-            print("[4] Gerenciar usuários")
+            print("[3] Loja de Itens")
+            print("[4] Exportar Progresso")
+            print("[5] Trocar de usuário")
             print("[0] Sair do Programa")
             
             opcao = input("\nEscolha uma opção: ").strip()
@@ -149,13 +183,18 @@ class SistemaMain:
             elif opcao == "2":
                 self.exibir_monitoramento()
             elif opcao == "3":
+                self.loja.menu_principal()
+            elif opcao == "4":
+                self.exportar_progresso()
+            elif opcao == "5":
                 if self.selecionar_usuario():
-                    # Atualiza o menu de metas com o novo usuário
+                    # Atualiza o menu de metas e loja com o novo usuário
                     self.menu_metas = MenuMetas(self.usuario_atual)
+                    self.loja = Loja(self.usuario_atual)
                 else:
                     print(cores.AMARELO + "Usuário não foi alterado." + cores.NORMAL)
                     enter_continuar()
-            elif opcao == "4":
+            elif opcao == "adm_usuarios":
                 self.gerenciador_usuarios.menu_principal()
             elif opcao == "0":
                 print(cores.VERDE+"Esperamos te ver amanhã!"+cores.NORMAL)
@@ -175,6 +214,7 @@ class SistemaMain:
         
         dados = self.gerenciador_usuarios.gd.obter_usuario(self.usuario_atual)
         stats = self.gerenciador_usuarios.gd.obter_estatisticas(self.usuario_atual)
+        itens = self.gerenciador_usuarios.gd.obter_todos_itens(self.usuario_atual)
         
         print(cores.VERDE + "="*50)
         print("  MONITORAMENTO DE PROGRESSO")
@@ -183,14 +223,29 @@ class SistemaMain:
         print(f"\nUsuário: {dados['nome_real']} (@{self.usuario_atual})")
         print(f"Criado em: {dados['data_criacao']}")
         print(f"Meta diária: {dados.get('tempo_label', str(dados['tempo_diario']) + ' horas')}")
+        # Informações de Pontos
+        pontos = dados.get('pontos', 0)
+        print(f"Pontos: {cores.VERDE}{pontos}{cores.NORMAL}")
+        
+        # Informações de Streak
+        streak = stats.get('streak', 0)
+        ultima_missao = stats.get('ultima_missao')
+        
+        print(f"\n{cores.AZUL}--- Streak ---{cores.NORMAL}")
+        if streak > 0:
+            print(f"🔥 {streak} dia(s) consecutivo(s)!")
+            if ultima_missao:
+                print(f"Última missão completa: {Tempo.formatar_tempo_relativo(ultima_missao)}")
+        else:
+            print(f"{cores.AMARELO}Nenhum streak ativo.{cores.NORMAL}\nComplete uma missão hoje para começar!")
         
         print(f"\n{cores.AZUL}--- Estatísticas Gerais ---{cores.NORMAL}")
         print(f"Total de metas: {stats['total_metas']}")
         print(f"Total de missões: {stats['total_missoes']}")
-        print(f"Missões completas: {cores.VERDE}{stats['missoes_completas']}{cores.NORMAL}")
-        print(f"Missões pendentes: {cores.AMARELO}{stats['missoes_pendentes']}{cores.NORMAL}")
+        print(f"Missões completas: {cores.VERDE}{stats['missoes_completas_hoje']}{cores.NORMAL}")
+        print(f"Missões pendentes: {cores.AMARELO}{stats['missoes_pendentes_hoje']}{cores.NORMAL}")
         
-        if stats['total_missoes'] > 0:
+        if stats.get('missoes_pendentes_hoje',0) > 0:
             taxa = stats['taxa_conclusao']
             cor_taxa = cores.VERDE if taxa >= 70 else cores.AMARELO if taxa >= 40 else cores.VERMELHO
             print(f"Taxa de conclusão: {cor_taxa}{taxa:.1f}%{cores.NORMAL}")
@@ -207,16 +262,132 @@ class SistemaMain:
             print(f"\n{cores.AZUL}--- Progresso por Meta ---{cores.NORMAL}")
             for meta_id, meta in metas.items():
                 missoes = meta.get('missoes', {})
+                missoes_hoje = self.gerenciador_usuarios.gd.listar_missoes_pendentes_hoje(
+                    self.usuario_atual, meta_id
+                )
                 total = len(missoes)
-                completas = sum(1 for m in missoes.values() if m.get('completa', False))
                 
                 if total > 0:
-                    percentual = (completas / total) * 100
                     print(f"\n{meta['nome']}:")
-                    print(f"  Missões: {completas}/{total} ({percentual:.0f}%)")
+                    print(f"  Missões: {total}")
+                    for missao_id, missao in missoes.items():
+                        completa = missao.get('completa', False)
+                        data_pendente = missao.get('data_pendente', '')     
+                        if completa:
+                            status = "✓"
+                            info = "(Completa)"
+                        elif Tempo.e_hoje(data_pendente):
+                            status = "○"
+                            info = "(Hoje)"
+                        elif Tempo.e_antes_de_hoje(data_pendente):
+                            status = "●"
+                            info = "(Atrasada)"
+                        else:
+                            status = None
+                            info = None
+                        if status and info:
+                            print(f"   {status} {missao['nome']} {info}")
                 else:
                     print(f"\n{meta['nome']}:")
                     print(f"  Sem missões cadastradas")
+        
+        enter_continuar()
+    
+    def exportar_progresso(self):
+        """Exporta o progresso do usuário para um arquivo .txt"""
+        limpar_terminal()
+        
+        if not self.usuario_atual:
+            print(cores.VERMELHO + "Nenhum usuário selecionado!" + cores.NORMAL)
+            enter_continuar()
+            return
+        
+        dados = self.gerenciador_usuarios.gd.obter_usuario(self.usuario_atual)
+        stats = self.gerenciador_usuarios.gd.obter_estatisticas(self.usuario_atual)
+        itens = self.gerenciador_usuarios.gd.obter_todos_itens(self.usuario_atual)
+        
+        # Nome do arquivo
+        timestamp = Tempo.extrair_data(Tempo.agora()).replace("/", "-")
+        nome_arquivo = f"progresso_{self.usuario_atual}_{timestamp}.txt"
+        
+        try:
+            with open(nome_arquivo, 'w', encoding='utf-8') as f:
+                # Cabeçalho
+                f.write("="*60 + "\n")
+                f.write(" "*19+"RELATÓRIO DE PROGRESSO\n\n\n")
+                
+                # Informações do usuário
+                f.write(f"Usuário: {dados['nome_real']} (@{self.usuario_atual})\n")
+                f.write(f"Criado em: {dados['data_criacao']}\n")
+                f.write(f"Meta diária: {dados.get('tempo_label', str(dados['tempo_diario']) + ' horas')}\n")
+                f.write(f"Pontos: {dados.get('pontos', 0)}\n")
+                f.write(f"Relatório gerado em: {Tempo.agora()}\n")
+                
+                # Informações de Streak
+                f.write("\n" + "-"*60 + "\n")
+                f.write(" "*27+"STREAK\n")
+                f.write("-"*60 + "\n")
+                
+                streak = stats.get('streak', 0)
+                ultima_missao = stats.get('ultima_missao')
+                
+                if streak > 0:
+                    f.write(f"🔥 {streak} dia(s) consecutivo(s)!\n")
+                    if ultima_missao:
+                        f.write(f"Última missão completa: {Tempo.formatar_tempo_relativo(ultima_missao)}\n")
+                else:
+                    f.write("Nenhum streak ativo.\n")
+                
+                # Estatísticas Gerais
+                f.write("\n" + "-"*60 + "\n")
+                f.write(" "*20+"ESTATÍSTICAS GERAIS\n")
+                f.write("-"*60 + "\n")
+                
+                f.write(f"Total de metas: {stats['total_metas']}\n")
+                f.write(f"Total de missões: {stats['total_missoes']}\n")
+                
+                # Detalhes por meta
+                metas = self.gerenciador_usuarios.gd.listar_metas(self.usuario_atual)
+                if metas:
+                    f.write("\n" + "-"*60 + "\n")
+                    f.write(" "*21+"PROGRESSO POR META\n")
+                    f.write("-"*60 + "\n")
+                    
+                    for meta_id, meta in metas.items():
+                        f.write(f"\n{meta['nome']}\n")
+                        
+                        if meta.get('descricao'):
+                            f.write(f"  Descrição: {meta['descricao']}\n")
+                        
+                        f.write(f"  Criada em: {meta.get('data_criacao', 'Data desconhecida')}\n")
+                        
+                        missoes = meta.get('missoes', {})
+                        missoes_hoje = self.gerenciador_usuarios.gd.listar_missoes_pendentes_hoje(
+                            self.usuario_atual, meta_id
+                        )
+                        total = len(missoes)
+                        
+                        f.write(f"  Total de missões: {total}\n")
+                        
+                        # Lista todas as missões desta meta
+                        if missoes:
+                            f.write("\n  Missões:\n")
+                            for missao_id, missao in missoes.items():
+                                f.write(f"    {missao['nome']}\n")
+                                f.write(f"      Frequência: A cada {missao.get('frequencia', 1)} dia(s)\n")
+                
+                # Rodapé
+                f.write("\n\n"+" "*22+"Fim do relatório\n")
+                f.write("="*60 + "\n")
+            
+            print(cores.VERDE + "="*50)
+            print("  ✓ PROGRESSO EXPORTADO COM SUCESSO!")
+            print("="*50 + cores.NORMAL)
+            print(f"\nArquivo salvo como: {cores.AZUL}{nome_arquivo}{cores.NORMAL}")
+            print(f"Localização: {cores.AZUL}{os.path.abspath(nome_arquivo)}{cores.NORMAL}")
+            
+        except Exception as e:
+            print(cores.VERMELHO + f"Erro ao exportar progresso: {e}" + cores.NORMAL)
         
         enter_continuar()
 
